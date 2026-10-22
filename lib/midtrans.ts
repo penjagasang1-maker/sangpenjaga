@@ -1,5 +1,3 @@
-import { createHash } from 'crypto'
-
 export interface CreateTransactionParams {
   orderId: string
   amount: number
@@ -66,18 +64,22 @@ export async function createTransaction(
   }
 }
 
-export function verifySignature(
+export async function verifySignature(
   signatureKey: string,
   orderId: string,
   statusCode: string,
   grossAmount: string
-): boolean {
+): Promise<boolean> {
   const serverKey = process.env.MIDTRANS_SERVER_KEY
   if (!serverKey) {
     return false
   }
 
   const payload = `${orderId}${statusCode}${grossAmount}${serverKey}`
-  const hash = createHash('sha512').update(payload).digest('hex')
+  const encoder = new TextEncoder()
+  const data = encoder.encode(payload)
+  const hashBuffer = await crypto.subtle.digest('SHA-512', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
   return hash.toLowerCase() === signatureKey.toLowerCase()
 }

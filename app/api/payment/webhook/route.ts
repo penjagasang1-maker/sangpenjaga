@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     } = body
 
     // Verify signature from Midtrans
-    const isValid = verifySignature(
+    const isValid = await verifySignature(
       signature_key,
       order_id,
       status_code,
