@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { comics } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
-import { eq, desc, like, sql } from 'drizzle-orm'
+import { eq, desc, like, and } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 // GET /api/comics - list comics (public)
@@ -14,8 +14,6 @@ export async function GET(request: Request) {
     const genre = searchParams.get('genre') || ''
     const status = searchParams.get('status') || ''
     const offset = (page - 1) * limit
-
-    let query = db.select().from(comics)
 
     const conditions = []
     if (search) {
@@ -33,7 +31,7 @@ export async function GET(request: Request) {
       result = await db
         .select()
         .from(comics)
-        .where(sql`${conditions.map(c => c).join(' AND ')}`)
+        .where(and(...conditions))
         .orderBy(desc(comics.createdAt))
         .limit(limit)
         .offset(offset)
@@ -92,7 +90,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const [result] = await db.insert(comics).values({
+    const result = await db.insert(comics).values({
       title,
       slug,
       synopsis: synopsis || '',
@@ -101,7 +99,7 @@ export async function POST(request: Request) {
       status: comicStatus || 'ongoing',
     })
 
-    return NextResponse.json({ success: true, id: result.insertId })
+    return NextResponse.json({ success: true, id: (result as any)?.insertId })
   } catch (error) {
     console.error('Create comic error:', error)
     return NextResponse.json(
