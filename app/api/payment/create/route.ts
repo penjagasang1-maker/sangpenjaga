@@ -4,6 +4,7 @@ import { validateRequest } from '@/lib/auth'
 import { createTransaction, verifySignature } from '@/lib/midtrans'
 import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+export const runtime = 'edge'
 
 export async function POST(request: Request) {
   try {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, ChevronLeft, Home, List, Settings } from 'lucide-react'
 
+export const runtime = 'edge'
+
 interface PageProps {
   params: { slug: string; chapter: string }
 }

@@ -3,6 +3,7 @@ import { comics } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
 import { eq, desc, like, and } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+export const runtime = 'edge'
 
 // GET /api/comics - list comics (public)
 export async function GET(request: Request) {

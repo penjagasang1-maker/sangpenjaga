@@ -4,6 +4,7 @@ import { lucia } from '@/lib/auth'
 import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+export const runtime = 'edge'
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
   const [saltHex, hashHex] = hash.split(':')

@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowLeft, BookOpen, Eye, Clock, Lock, Unlock } from 'lucide-react'
 
+export const runtime = 'edge'
+
 interface PageProps {
   params: { slug: string }
 }

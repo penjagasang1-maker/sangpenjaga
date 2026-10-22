@@ -1,6 +1,5 @@
 import { Lucia } from 'lucia'
 import { DrizzleMySQLAdapter } from '@lucia-auth/adapter-drizzle'
-import { cache } from 'react'
 import { db } from './db'
 import { sessions, users } from './schema'
 
@@ -37,7 +36,7 @@ interface DatabaseUserAttributes {
   role: 'user' | 'admin'
 }
 
-export const validateRequest = cache(async () => {
+export const validateRequest = async () => {
   const { cookies } = await import('next/headers')
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null
   if (!sessionId) {
@@ -70,6 +69,6 @@ export const validateRequest = cache(async () => {
   }
 
   return result
-})
+}
 
 export type Auth = typeof lucia

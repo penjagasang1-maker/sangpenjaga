@@ -6,6 +6,8 @@ import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
+export const runtime = 'edge'
+
 // NOTE: Password hashing uses Web Crypto API (edge-compatible)
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
