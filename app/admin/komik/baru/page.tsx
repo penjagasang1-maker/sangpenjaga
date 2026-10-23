@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { compressImage } from '@/lib/compress'
 
 export default function TambahKomikPage() {
   const router = useRouter()
@@ -44,12 +45,19 @@ export default function TambahKomikPage() {
     reader.onloadend = () => setCoverPreview(reader.result as string)
     reader.readAsDataURL(file)
 
-    // Upload to Cloudinary
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('folder', 'sang-penjaga/covers')
-
     try {
+      // Auto-compress cover image
+      const { file: compressedFile } = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 1200,
+        quality: 0.85,
+      })
+
+      // Upload to Cloudinary
+      const formData = new FormData()
+      formData.append('file', compressedFile)
+      formData.append('folder', 'sang-penjaga/covers')
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,

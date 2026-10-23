@@ -10,6 +10,8 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 
+import { compressImage } from '@/lib/compress'
+
 interface BannerItem {
   id: number
   imageUrl: string
@@ -52,9 +54,16 @@ export default function AdminBannerPage() {
     setMessage(null)
 
     try {
-      // 1. Upload to Cloudinary via /api/upload
+      // 1. Auto-compress client-side before sending to Cloudinary
+      const { file: compressedFile, originalSize, compressedSize, savedPercent } = await compressImage(file, {
+        maxWidth: 1600,
+        maxHeight: 900,
+        quality: 0.82,
+      })
+
+      // 2. Upload to Cloudinary via /api/upload
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressedFile)
       formData.append('folder', 'sang-penjaga/banners')
 
       const resUpload = await fetch('/api/upload', {
@@ -68,7 +77,7 @@ export default function AdminBannerPage() {
         throw new Error(uploadData.error || 'Gagal mengunggah gambar ke Cloudinary')
       }
 
-      // 2. Save banner record to DB via /api/banners
+      // 3. Save banner record to DB via /api/banners
       const resSave = await fetch('/api/banners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +94,8 @@ export default function AdminBannerPage() {
         throw new Error(saveData.error || 'Gagal menyimpan data banner')
       }
 
-      setMessage({ type: 'success', text: 'Banner berhasil diunggah dan disimpan!' })
+      const infoSaved = savedPercent > 0 ? ` (Dikompres hemat ${savedPercent}%: ${(originalSize / 1024).toFixed(0)}KB → ${(compressedSize / 1024).toFixed(0)}KB)` : ''
+      setMessage({ type: 'success', text: `Banner berhasil diunggah${infoSaved}!` })
       fetchBanners()
     } catch (err: unknown) {
       setMessage({
