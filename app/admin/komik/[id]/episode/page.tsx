@@ -323,56 +323,68 @@ export default function AdminEpisodePage() {
               </div>
             </div>
 
-            {/* Monetization / Free status */}
-            <div className="p-4 rounded-lg bg-dark border border-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Subscription vs Free Access */}
+            <div className="p-4 rounded-xl bg-dark border border-dark-border space-y-3">
               <div>
                 <span className="text-sm font-semibold text-white block">
-                  Akses Pembaca
+                  Ketentuan Akses Pembaca
                 </span>
                 <span className="text-xs text-gray-400">
-                  Pilih apakah episode ini gratis atau berbayar
+                  Pilih apakah episode ini bisa dibaca gratis oleh siapa saja, atau khusus member yang berlangganan (Bulanan / Tahunan)
                 </span>
               </div>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <label
+                  onClick={() => setIsFree(true)}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                    isFree
+                      ? 'border-green-500 bg-green-500/10 text-white'
+                      : 'border-dark-border bg-dark-card text-gray-400 hover:border-gray-600'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="accessType"
                     checked={isFree}
                     onChange={() => setIsFree(true)}
-                    className="accent-gold"
+                    className="mt-1 accent-green-500"
                   />
-                  <span>Gratis (Free)</span>
+                  <div>
+                    <span className="text-sm font-bold block text-green-400">
+                      Gratis (Free Preview)
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Bisa dibaca oleh semua pengunjung & pembaca tanpa perlu berlangganan
+                    </span>
+                  </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+
+                <label
+                  onClick={() => setIsFree(false)}
+                  className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
+                    !isFree
+                      ? 'border-gold bg-gold/10 text-white'
+                      : 'border-dark-border bg-dark-card text-gray-400 hover:border-gray-600'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="accessType"
                     checked={!isFree}
                     onChange={() => setIsFree(false)}
-                    className="accent-gold"
+                    className="mt-1 accent-gold"
                   />
-                  <span>Berbayar (Rp)</span>
+                  <div>
+                    <span className="text-sm font-bold block text-gold">
+                      Khusus Member VIP (Langganan)
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Halaman terkunci. Hanya user dengan paket langganan aktif yang dapat membaca
+                    </span>
+                  </div>
                 </label>
               </div>
             </div>
-
-            {!isFree && (
-              <div>
-                <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
-                  Harga Episode (Rupiah)
-                </label>
-                <input
-                  type="number"
-                  min="1000"
-                  step="500"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Contoh: 3000"
-                  className="w-full sm:w-64 bg-dark border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none"
-                />
-              </div>
-            )}
 
             {/* Multi-page Image Uploader */}
             <div>
@@ -546,8 +558,8 @@ export default function AdminEpisodePage() {
                         <Unlock className="w-3 h-3" /> Gratis
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-xs font-semibold text-amber-400">
-                        <Lock className="w-3 h-3" /> Rp {chap.price.toLocaleString('id-ID')}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 border border-gold/40 px-2.5 py-0.5 text-xs font-semibold text-gold">
+                        <Lock className="w-3 h-3" /> Khusus Member VIP
                       </span>
                     )}
                   </td>
