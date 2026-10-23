@@ -112,7 +112,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="pt-8 border-t border-dark-border text-center sm:text-left text-xs text-gray-500">
-          <p>&copy; 2024 Sang Penjaga. All rights reserved.</p>
+          <p>&copy; 2026 Sang Penjaga. All rights reserved.</p>
         </div>
       </div>
     </footer>
