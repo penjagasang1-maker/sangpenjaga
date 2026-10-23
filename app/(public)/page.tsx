@@ -2,17 +2,58 @@ import Link from 'next/link'
 import { BookOpen, Shield, Sparkles } from 'lucide-react'
 import HeroBanner from '@/components/home/HeroBanner'
 import ComicSection from '@/components/home/ComicSection'
+import { db } from '@/lib/db'
+import { banners, comics } from '@/lib/schema'
+import { desc, eq, asc } from 'drizzle-orm'
 
-export default function HomePage() {
+export const revalidate = 0
+
+export default async function HomePage() {
+  let heroSlides: { id: number; imageUrl: string; linkUrl?: string }[] = []
+  let latestComics: any[] = []
+  let popularComics: any[] = []
+
+  try {
+    const bannerRows = await db
+      .select({
+        id: banners.id,
+        imageUrl: banners.imageUrl,
+        linkUrl: banners.linkUrl,
+      })
+      .from(banners)
+      .where(eq(banners.isActive, true))
+      .orderBy(asc(banners.sortOrder))
+
+    heroSlides = bannerRows.map((b) => ({
+      id: b.id,
+      imageUrl: b.imageUrl,
+      linkUrl: b.linkUrl || undefined,
+    }))
+
+    latestComics = await db
+      .select()
+      .from(comics)
+      .orderBy(desc(comics.createdAt))
+      .limit(8)
+
+    popularComics = await db
+      .select()
+      .from(comics)
+      .orderBy(desc(comics.viewCount))
+      .limit(8)
+  } catch (e) {
+    console.error('Error fetching homepage data:', e)
+  }
+
   return (
     <div className="flex flex-col gap-4 sm:gap-8 pb-16">
       {/* Hero Banner Slider */}
-      <HeroBanner slides={[]} />
+      <HeroBanner slides={heroSlides} />
 
       {/* Komik Terbaru Section */}
       <ComicSection
         title="Komik Terbaru"
-        comics={[]}
+        comics={latestComics}
         showViewAll
         viewAllLink="/komik?sort=latest"
       />
@@ -20,7 +61,7 @@ export default function HomePage() {
       {/* Komik Populer Section */}
       <ComicSection
         title="Komik Populer"
-        comics={[]}
+        comics={popularComics}
         showViewAll
         viewAllLink="/komik?sort=popular"
       />

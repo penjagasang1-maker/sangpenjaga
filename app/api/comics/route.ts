@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   try {
     const { user } = await validateRequest()
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
       return NextResponse.json(
         { error: 'Akses ditolak' },
         { status: 403 }
