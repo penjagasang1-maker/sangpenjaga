@@ -114,10 +114,19 @@ export default function AdminSidebar() {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t border-dark-border p-3">
+        <div className="border-t border-dark-border p-3 space-y-1">
+          <Link
+            href="/"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gold hover:bg-gold/10 transition-colors"
+            title="Lihat Website Pembaca"
+          >
+            <BookOpen className="h-5 w-5 flex-shrink-0" />
+            {!collapsed && <span>Lihat Website</span>}
+          </Link>
+
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-dark-hover hover:text-red-400"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-400 hover:bg-dark-hover hover:text-red-400 transition-colors"
           >
             <LogOut className="h-5 w-5 flex-shrink-0" />
             {!collapsed && <span>Keluar</span>}

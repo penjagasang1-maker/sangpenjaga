@@ -1,9 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, User, LogIn } from 'lucide-react'
+import {
+  Menu,
+  X,
+  User as UserIcon,
+  LogIn,
+  LogOut,
+  Shield,
+  Crown,
+} from 'lucide-react'
 
 const navLinks = [
   { name: 'Beranda', href: '/' },
@@ -11,14 +19,51 @@ const navLinks = [
   { name: 'Tentang', href: '/tentang' },
 ]
 
+interface CurrentUser {
+  id: string
+  email: string
+  username: string
+  role: 'user' | 'admin' | 'superadmin'
+}
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [loadingUser, setLoadingUser] = useState(true)
   const pathname = usePathname()
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data?.user) {
+          setCurrentUser(data.user)
+        }
+      } catch {
+        // Not logged in or error
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+    fetchMe()
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      window.location.href = '/'
+    } catch {
+      window.location.href = '/'
+    }
+  }
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
     return pathname.startsWith(href)
   }
+
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-dark-border bg-dark/80 backdrop-blur-xl">
@@ -66,33 +111,93 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth Section */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 border border-gold text-gold hover:bg-gold hover:text-black transition-colors rounded-lg px-4 py-1.5 text-sm font-medium"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Masuk</span>
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 bg-gold text-black hover:bg-gold-light transition-colors rounded-lg px-4 py-1.5 text-sm font-semibold"
-            >
-              <User className="w-4 h-4" />
-              <span>Daftar</span>
-            </Link>
+            {!loadingUser && currentUser ? (
+              <div className="flex items-center space-x-3">
+                {/* Admin Switcher Button */}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-gold/20 border border-gold/40 text-gold hover:bg-gold hover:text-black transition-all rounded-lg px-3.5 py-1.5 text-xs font-semibold shadow-sm shadow-gold/10"
+                  >
+                    {currentUser.role === 'superadmin' ? (
+                      <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    ) : (
+                      <Shield className="w-3.5 h-3.5" />
+                    )}
+                    <span>Dashboard Admin</span>
+                  </Link>
+                )}
+
+                {/* User Greeting */}
+                <div className="flex items-center gap-2 pl-2 border-l border-dark-border text-sm text-gray-300">
+                  <div className="w-7 h-7 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs">
+                    {currentUser.username[0]?.toUpperCase()}
+                  </div>
+                  <span className="font-medium max-w-[120px] truncate">
+                    {currentUser.username}
+                  </span>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-dark-card rounded-lg transition-colors"
+                  title="Keluar Akun"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 border border-gold text-gold hover:bg-gold hover:text-black transition-colors rounded-lg px-4 py-1.5 text-sm font-medium"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Masuk</span>
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-1.5 bg-gold text-black hover:bg-gold-light transition-colors rounded-lg px-4 py-1.5 text-sm font-semibold"
+                >
+                  <UserIcon className="w-4 h-4" />
+                  <span>Daftar</span>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Quick Auth Icon */}
           <div className="flex lg:hidden items-center">
-            <Link
-              href="/login"
-              className="p-2 text-gold hover:text-gold-light"
-              aria-label="Masuk ke Akun"
-            >
-              <LogIn className="w-5 h-5" />
-            </Link>
+            {currentUser ? (
+              isAdmin ? (
+                <Link
+                  href="/admin"
+                  className="p-2 text-gold hover:text-gold-light"
+                  aria-label="Dashboard Admin"
+                >
+                  <Shield className="w-5 h-5" />
+                </Link>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-gray-400 hover:text-red-400"
+                  aria-label="Keluar"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              )
+            ) : (
+              <Link
+                href="/login"
+                className="p-2 text-gold hover:text-gold-light"
+                aria-label="Masuk ke Akun"
+              >
+                <LogIn className="w-5 h-5" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -131,6 +236,25 @@ export default function Navbar() {
             </button>
           </div>
 
+          {/* User Profile Summary in Mobile Drawer */}
+          {currentUser && (
+            <div className="mt-4 p-3 rounded-lg bg-dark border border-dark-border flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs">
+                  {currentUser.username[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-white truncate max-w-[120px]">
+                    {currentUser.username}
+                  </p>
+                  <span className="text-[10px] text-gold uppercase font-bold">
+                    {currentUser.role}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Drawer Navigation Links */}
           <nav className="mt-6 flex flex-col space-y-2">
             {navLinks.map((link) => {
@@ -150,27 +274,55 @@ export default function Navbar() {
                 </Link>
               )
             })}
+
+            {/* Admin link in mobile drawer */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+                className="px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors bg-gold/10 text-gold border border-gold/30 flex items-center gap-2 mt-2"
+              >
+                {currentUser?.role === 'superadmin' ? (
+                  <Crown className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Shield className="w-4 h-4" />
+                )}
+                <span>Buka Dashboard Admin</span>
+              </Link>
+            )}
           </nav>
         </div>
 
         {/* Drawer Auth Buttons */}
         <div className="pt-6 border-t border-dark-border flex flex-col gap-3">
-          <Link
-            href="/login"
-            onClick={() => setIsOpen(false)}
-            className="w-full inline-flex items-center justify-center gap-2 border border-gold text-gold hover:bg-gold hover:text-black transition-colors rounded-lg py-2.5 text-sm font-medium"
-          >
-            <LogIn className="w-4 h-4" />
-            <span>Masuk</span>
-          </Link>
-          <Link
-            href="/register"
-            onClick={() => setIsOpen(false)}
-            className="w-full inline-flex items-center justify-center gap-2 bg-gold text-black hover:bg-gold-light transition-colors rounded-lg py-2.5 text-sm font-semibold"
-          >
-            <User className="w-4 h-4" />
-            <span>Daftar Akun Baru</span>
-          </Link>
+          {currentUser ? (
+            <button
+              onClick={handleLogout}
+              className="w-full inline-flex items-center justify-center gap-2 border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors rounded-lg py-2.5 text-sm font-medium"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Keluar dari Akun</span>
+            </button>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="w-full inline-flex items-center justify-center gap-2 border border-gold text-gold hover:bg-gold hover:text-black transition-colors rounded-lg py-2.5 text-sm font-medium"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Masuk</span>
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setIsOpen(false)}
+                className="w-full inline-flex items-center justify-center gap-2 bg-gold text-black hover:bg-gold-light transition-colors rounded-lg py-2.5 text-sm font-semibold"
+              >
+                <UserIcon className="w-4 h-4" />
+                <span>Daftar Akun Baru</span>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
