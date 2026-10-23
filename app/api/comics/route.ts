@@ -109,3 +109,37 @@ export async function POST(request: Request) {
     )
   }
 }
+
+// DELETE /api/comics?id=123 (admin/superadmin)
+export async function DELETE(request: Request) {
+  try {
+    const { user } = await validateRequest()
+
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+      return NextResponse.json(
+        { error: 'Akses ditolak' },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = parseInt(searchParams.get('id') || '')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID komik tidak valid' },
+        { status: 400 }
+      )
+    }
+
+    await db.delete(comics).where(eq(comics.id, id))
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete comic error:', error)
+    return NextResponse.json(
+      { error: 'Gagal menghapus komik' },
+      { status: 500 }
+    )
+  }
+}
