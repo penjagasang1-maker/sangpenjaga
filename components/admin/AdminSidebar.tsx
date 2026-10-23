@@ -72,7 +72,7 @@ export default function AdminSidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-dark-border px-4">
           {!collapsed && (
-            <Link href="/admin" className="font-heading text-lg font-extrabold text-gold">
+            <Link href="/admin" className="font-heading text-lg font-extrabold text-red-600">
               SANG PENJAGA
             </Link>
           )}

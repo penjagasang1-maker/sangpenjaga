@@ -85,7 +85,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link
               href="/"
-              className="font-heading font-extrabold text-xl sm:text-2xl text-gold tracking-wider hover:opacity-90 transition-opacity"
+              className="font-heading font-extrabold text-xl sm:text-2xl text-red-600 tracking-wider hover:opacity-90 transition-opacity"
             >
               SANG PENJAGA
             </Link>
@@ -222,7 +222,7 @@ export default function Navbar() {
             <Link
               href="/"
               onClick={() => setIsOpen(false)}
-              className="font-heading font-extrabold text-xl text-gold tracking-wider"
+              className="font-heading font-extrabold text-xl text-red-600 tracking-wider"
             >
               SANG PENJAGA
             </Link>

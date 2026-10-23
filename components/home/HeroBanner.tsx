@@ -36,7 +36,7 @@ export default function HeroBanner({ slides = [] }: HeroBannerProps) {
             Komik Resmi
           </span>
           <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-white tracking-wide mb-3">
-            SANG <span className="text-gold">PENJAGA</span>
+            SANG <span className="text-red-600">PENJAGA</span>
           </h1>
           <p className="text-gray-400 text-sm sm:text-base max-w-lg mx-auto">
             Petualangan aksi dan misteri sang pelindung kota. Nantikan rilisan episode terbaru segera!

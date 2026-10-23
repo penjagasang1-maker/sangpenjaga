@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="max-w-md">
             <Link
               href="/"
-              className="font-heading font-extrabold text-2xl text-gold tracking-wider inline-block mb-3"
+              className="font-heading font-extrabold text-2xl text-red-600 tracking-wider inline-block mb-3"
             >
               SANG PENJAGA
             </Link>
