@@ -33,7 +33,7 @@ interface DatabaseUserAttributes {
   email: string
   username: string
   avatarUrl: string | null
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'superadmin'
 }
 
 export const validateRequest = async () => {

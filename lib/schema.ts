@@ -18,7 +18,7 @@ export const users = mysqlTable('users', {
   username: varchar('username', { length: 100 }).notNull(),
   hashedPassword: varchar('hashed_password', { length: 255 }).notNull(),
   avatarUrl: varchar('avatar_url', { length: 500 }),
-  role: mysqlEnum('role', ['user', 'admin']).default('user').notNull(),
+  role: mysqlEnum('role', ['user', 'admin', 'superadmin']).default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
