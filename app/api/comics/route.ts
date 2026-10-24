@@ -1,7 +1,8 @@
 import { db } from '@/lib/db'
-import { comics } from '@/lib/schema'
+import { comics, chapters, pages } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
 import { eq, desc, like, and } from 'drizzle-orm'
+import { deleteFromR2 } from '@/lib/r2'
 import { NextResponse } from 'next/server'
 export const runtime = 'edge'
 
@@ -139,6 +140,46 @@ export async function DELETE(request: Request) {
       )
     }
 
+    // 1. Fetch comic details for coverUrl
+    const [comic] = await db
+      .select({ coverUrl: comics.coverUrl })
+      .from(comics)
+      .where(eq(comics.id, id))
+      .limit(1)
+
+    // 2. Fetch all chapters and pages to collect storage URLs
+    const comicChapters = await db
+      .select({ id: chapters.id, musicUrl: chapters.musicUrl })
+      .from(chapters)
+      .where(eq(chapters.comicId, id))
+
+    const urlsToDelete: string[] = []
+    if (comic?.coverUrl) urlsToDelete.push(comic.coverUrl)
+
+    for (const chap of comicChapters) {
+      if (chap.musicUrl) urlsToDelete.push(chap.musicUrl)
+
+      const pageRows = await db
+        .select({ imageUrl: pages.imageUrl })
+        .from(pages)
+        .where(eq(pages.chapterId, chap.id))
+
+      for (const p of pageRows) {
+        if (p.imageUrl) urlsToDelete.push(p.imageUrl)
+      }
+
+      await db.delete(pages).where(eq(pages.chapterId, chap.id))
+    }
+
+    // 3. Delete all files from Cloudflare R2
+    if (urlsToDelete.length > 0) {
+      await deleteFromR2(urlsToDelete).catch((err) =>
+        console.error('R2 delete comic files error:', err)
+      )
+    }
+
+    // 4. Cascade delete chapters & comic
+    await db.delete(chapters).where(eq(chapters.comicId, id))
     await db.delete(comics).where(eq(comics.id, id))
 
     return NextResponse.json({ success: true })

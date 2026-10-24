@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { banners } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
 import { eq, asc } from 'drizzle-orm'
+import { deleteFromR2 } from '@/lib/r2'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -92,6 +93,21 @@ export async function DELETE(request: Request) {
       )
     }
 
+    // 1. Fetch banner to get image URL
+    const [banner] = await db
+      .select({ imageUrl: banners.imageUrl })
+      .from(banners)
+      .where(eq(banners.id, id))
+      .limit(1)
+
+    // 2. Delete file from R2
+    if (banner?.imageUrl) {
+      await deleteFromR2(banner.imageUrl).catch((err) =>
+        console.error('R2 delete banner err:', err)
+      )
+    }
+
+    // 3. Delete from database
     await db.delete(banners).where(eq(banners.id, id))
 
     return NextResponse.json({ success: true })

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { comics, chapters, pages } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
 import { eq, and, asc, desc, sql } from 'drizzle-orm'
+import { deleteFromR2 } from '@/lib/r2'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -137,6 +138,18 @@ export async function POST(
 
       // Only replace pages if new page images were explicitly uploaded
       if (Array.isArray(pageImages) && pageImages.length > 0) {
+        // Collect old pages to delete from R2
+        const oldPages = await db
+          .select({ imageUrl: pages.imageUrl })
+          .from(pages)
+          .where(eq(pages.chapterId, chapterId))
+
+        if (oldPages.length > 0) {
+          deleteFromR2(oldPages.map((p) => p.imageUrl)).catch((err) =>
+            console.error('R2 delete old pages error:', err)
+          )
+        }
+
         await db.delete(pages).where(eq(pages.chapterId, chapterId))
         for (let i = 0; i < pageImages.length; i++) {
           const p = pageImages[i]
@@ -234,6 +247,34 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID chapter tidak valid' }, { status: 400 })
     }
 
+    // 1. Fetch chapter musicUrl
+    const [chap] = await db
+      .select({ musicUrl: chapters.musicUrl })
+      .from(chapters)
+      .where(eq(chapters.id, chapterId))
+      .limit(1)
+
+    // 2. Fetch all pages of chapter
+    const pageRows = await db
+      .select({ imageUrl: pages.imageUrl })
+      .from(pages)
+      .where(eq(pages.chapterId, chapterId))
+
+    // 3. Delete files from Cloudflare R2
+    const urlsToDelete: string[] = []
+    if (chap?.musicUrl) urlsToDelete.push(chap.musicUrl)
+    for (const p of pageRows) {
+      if (p.imageUrl) urlsToDelete.push(p.imageUrl)
+    }
+
+    if (urlsToDelete.length > 0) {
+      await deleteFromR2(urlsToDelete).catch((err) =>
+        console.error('R2 delete chapter files error:', err)
+      )
+    }
+
+    // 4. Delete pages and chapter from database
+    await db.delete(pages).where(eq(pages.chapterId, chapterId))
     await db.delete(chapters).where(eq(chapters.id, chapterId))
 
     return NextResponse.json({ success: true })

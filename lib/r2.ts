@@ -116,3 +116,104 @@ export async function uploadImage(
     storage: 'cloudinary',
   }
 }
+
+/**
+ * Extracts the object key in R2 bucket from a full URL or storage path.
+ */
+export function extractR2Key(urlOrKey: string): string | null {
+  if (!urlOrKey || typeof urlOrKey !== 'string') return null
+  const trimmed = urlOrKey.trim()
+  if (!trimmed) return null
+
+  // Skip external services
+  if (
+    trimmed.includes('cloudinary.com') ||
+    trimmed.includes('youtube.com') ||
+    trimmed.includes('youtu.be')
+  ) {
+    return null
+  }
+
+  try {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const u = new URL(trimmed)
+      const pathname = u.pathname.replace(/^\/+/, '')
+      const clean = pathname.replace(/^api\/cdn\//, '')
+      return clean || null
+    }
+    return trimmed.replace(/^\/+/, '').replace(/^api\/cdn\//, '')
+  } catch {
+    return trimmed.replace(/^\/+/, '')
+  }
+}
+
+/**
+ * Deletes one or more files from Cloudflare R2 bucket.
+ */
+export async function deleteFromR2(
+  urlsOrKeys: string | (string | null | undefined)[]
+): Promise<boolean> {
+  const items = Array.isArray(urlsOrKeys) ? urlsOrKeys : [urlsOrKeys]
+  const keys = items
+    .filter((k): k is string => typeof k === 'string' && Boolean(k))
+    .map(extractR2Key)
+    .filter((k): k is string => Boolean(k))
+
+  if (keys.length === 0) return true
+
+  // Check Cloudflare Pages context for R2 bucket binding
+  let r2Bucket: any = null
+  let cfEnv: any = null
+
+  try {
+    const { getRequestContext } = await import('@cloudflare/next-on-pages')
+    const ctx = getRequestContext()
+    cfEnv = ctx?.env
+    if (cfEnv?.R2_BUCKET) {
+      r2Bucket = cfEnv.R2_BUCKET
+    }
+  } catch {
+    // Local development or non-CF context
+  }
+
+  if (!r2Bucket) {
+    r2Bucket = (process.env as any)?.R2_BUCKET || (globalThis as any)?.R2_BUCKET
+  }
+
+  // 1. Native Cloudflare Pages R2 binding delete
+  if (r2Bucket) {
+    try {
+      if (keys.length === 1) {
+        await r2Bucket.delete(keys[0])
+      } else {
+        await r2Bucket.delete(keys)
+      }
+      console.log(`[R2 Delete Success] Removed ${keys.length} object(s):`, keys)
+      return true
+    } catch (err) {
+      console.error('R2 native delete error:', err)
+    }
+  }
+
+  // 2. S3-compatible REST API delete
+  const accountId = cfEnv?.R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID
+  const accessKeyId = cfEnv?.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID
+  const secretAccessKey = cfEnv?.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY
+  const r2BucketName = cfEnv?.R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'sang-penjaga'
+
+  if (accountId && accessKeyId && secretAccessKey) {
+    try {
+      await Promise.all(
+        keys.map(async (key) => {
+          const s3Endpoint = `https://${accountId}.r2.cloudflarestorage.com/${r2BucketName}/${key}`
+          await fetch(s3Endpoint, { method: 'DELETE' }).catch(() => {})
+        })
+      )
+      return true
+    } catch (s3Err) {
+      console.error('R2 S3 delete error:', s3Err)
+    }
+  }
+
+  return false
+}
