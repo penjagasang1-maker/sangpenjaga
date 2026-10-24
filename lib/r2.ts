@@ -16,30 +16,43 @@ export async function uploadImage(
   file: File,
   folder: string = 'comics'
 ): Promise<R2UploadResult> {
-  const publicDomain = (process.env.R2_PUBLIC_DOMAIN || '').replace(/\/$/, '')
-  const r2BucketName = process.env.R2_BUCKET_NAME || 'sang-penjaga'
-
-  // Generate clean filename
-  const ext = file.name ? file.name.split('.').pop() || 'webp' : 'webp'
-  const cleanFolder = folder.replace(/^\/+|\/+$/g, '')
-  const timestamp = Date.now()
-  const randomStr = Math.random().toString(36).slice(2, 8)
-  const key = `${cleanFolder}/${timestamp}-${randomStr}.${ext}`
-
-  // Check 1: Cloudflare Pages native R2 bucket binding via getRequestContext
+  // Check Cloudflare Pages context for R2 bucket binding and environment variables
   let r2Bucket: any = null
+  let cfEnv: any = null
+
   try {
     const { getRequestContext } = await import('@cloudflare/next-on-pages')
     const ctx = getRequestContext()
-    if (ctx?.env?.R2_BUCKET) {
-      r2Bucket = ctx.env.R2_BUCKET
+    cfEnv = ctx?.env
+    if (cfEnv?.R2_BUCKET) {
+      r2Bucket = cfEnv.R2_BUCKET
     }
   } catch {
     // Local development or non-CF context
   }
 
-  // If R2 binding available, upload via native R2 API
-  if (r2Bucket && publicDomain) {
+  // Fallback to global/process env if not in ctx
+  if (!r2Bucket) {
+    r2Bucket = (process.env as any)?.R2_BUCKET || (globalThis as any)?.R2_BUCKET
+  }
+
+  const publicDomain = (
+    cfEnv?.R2_PUBLIC_DOMAIN ||
+    process.env.R2_PUBLIC_DOMAIN ||
+    'https://cdn.sangpenjaga.com'
+  ).replace(/\/$/, '')
+
+  const r2BucketName = cfEnv?.R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || 'sang-penjaga'
+
+  // Generate clean filename
+  const ext = file.name ? file.name.split('.').pop() || 'webp' : 'webp'
+  const cleanFolder = folder.replace(/^sang-penjaga\/?/, '').replace(/^\/+|\/+$/g, '')
+  const timestamp = Date.now()
+  const randomStr = Math.random().toString(36).slice(2, 8)
+  const key = `${cleanFolder}/${timestamp}-${randomStr}.${ext}`
+
+  // 1. Upload via Cloudflare Pages native R2 binding
+  if (r2Bucket) {
     try {
       const arrayBuffer = await file.arrayBuffer()
       await r2Bucket.put(key, arrayBuffer, {
@@ -50,27 +63,28 @@ export async function uploadImage(
       })
 
       const fileUrl = `${publicDomain}/${key}`
+      console.log(`[R2 Upload Success] Stored: ${fileUrl}`)
+
       return {
         url: fileUrl,
         publicId: key,
         storage: 'r2',
       }
     } catch (r2Err) {
-      console.error('R2 native upload failed, falling back:', r2Err)
+      console.error('R2 native upload failed, falling back to Cloudinary:', r2Err)
     }
   }
 
-  // Check 2: Cloudflare S3-compatible REST API (via R2 S3 Credentials)
-  const accountId = process.env.R2_ACCOUNT_ID
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY
+  // 2. Upload via S3-compatible REST API (if S3 credentials configured)
+  const accountId = cfEnv?.R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID
+  const accessKeyId = cfEnv?.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID
+  const secretAccessKey = cfEnv?.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY
 
-  if (accountId && accessKeyId && secretAccessKey && publicDomain) {
+  if (accountId && accessKeyId && secretAccessKey) {
     try {
       const s3Endpoint = `https://${accountId}.r2.cloudflarestorage.com/${r2BucketName}/${key}`
       const arrayBuffer = await file.arrayBuffer()
 
-      // Simple PUT request to R2 S3 endpoint
       const res = await fetch(s3Endpoint, {
         method: 'PUT',
         headers: {
@@ -91,7 +105,8 @@ export async function uploadImage(
     }
   }
 
-  // Fallback: Cloudinary (preserves current functionality until R2 keys are provided)
+  // 3. Fallback: Cloudinary
+  console.log('[Upload] Falling back to Cloudinary...')
   const cloudResult = await uploadToCloudinary(file, folder)
   return {
     url: cloudResult.url,
