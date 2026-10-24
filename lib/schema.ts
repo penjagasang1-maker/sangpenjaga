@@ -265,3 +265,28 @@ export type ReadingHistory = typeof readingHistory.$inferSelect
 export type NewReadingHistory = typeof readingHistory.$inferInsert
 export type Banner = typeof banners.$inferSelect
 export type NewBanner = typeof banners.$inferInsert
+
+// 12. Site Settings table
+export const siteSettings = mysqlTable('site_settings', {
+  id: int('id').primaryKey().default(1),
+  siteName: varchar('site_name', { length: 255 }).default('Sang Penjaga').notNull(),
+  logoPrefix: varchar('logo_prefix', { length: 100 }).default('SANG').notNull(),
+  logoSuffix: varchar('logo_suffix', { length: 100 }).default('PENJAGA').notNull(),
+  footerDescription: text('footer_description'),
+  contactEmail: varchar('contact_email', { length: 255 }).default('mrizqi045@gmail.com').notNull(),
+  contactPhone: varchar('contact_phone', { length: 100 }).default('087880503974').notNull(),
+  contactAddress: varchar('contact_address', { length: 500 }).default('Cipinang melayu, 13620').notNull(),
+  socialInstagram: varchar('social_instagram', { length: 500 }).default('https://instagram.com'),
+  socialTwitter: varchar('social_twitter', { length: 500 }).default('https://x.com'),
+  socialYoutube: varchar('social_youtube', { length: 500 }).default('https://youtube.com'),
+  socialTiktok: varchar('social_tiktok', { length: 500 }).default(''),
+  copyrightText: varchar('copyright_text', { length: 255 }).default('© 2026 Sang Penjaga. Mond Bhasinato').notNull(),
+  aboutTitle: varchar('about_title', { length: 255 }).default('SANG PENJAGA').notNull(),
+  aboutParagraph1: text('about_paragraph_1'),
+  aboutParagraph2: text('about_paragraph_2'),
+  aboutHighlight: text('about_highlight'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export type SiteSetting = typeof siteSettings.$inferSelect
+export type NewSiteSetting = typeof siteSettings.$inferInsert

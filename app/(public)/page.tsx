@@ -4,6 +4,7 @@ import HeroBanner from '@/components/home/HeroBanner'
 import ComicSection from '@/components/home/ComicSection'
 import { db } from '@/lib/db'
 import { banners, comics } from '@/lib/schema'
+import { getSiteSettings, defaultSettings } from '@/lib/settings'
 import { desc, eq, asc } from 'drizzle-orm'
 
 export const revalidate = 30
@@ -12,9 +13,11 @@ export default async function HomePage() {
   let heroSlides: { id: number; imageUrl: string; linkUrl?: string }[] = []
   let latestComics: any[] = []
   let popularComics: any[] = []
+  let settings = defaultSettings
 
   try {
-    const [bannerRows, latestRows, popularRows] = await Promise.all([
+    const [siteSettingsData, bannerRows, latestRows, popularRows] = await Promise.all([
+      getSiteSettings(),
       db
         .select({
           id: banners.id,
@@ -35,6 +38,8 @@ export default async function HomePage() {
         .orderBy(desc(comics.viewCount))
         .limit(8),
     ])
+
+    settings = siteSettingsData
 
     heroSlides = bannerRows.map((b) => ({
       id: b.id,
@@ -77,20 +82,18 @@ export default async function HomePage() {
 
             <div className="relative z-10 max-w-3xl">
               <h2 className="font-heading font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight leading-tight mb-6">
-                <span className="text-white">SANG </span>
-                <span className="text-red-600">PENJAGA</span>
+                <span className="text-white">{settings.logoPrefix} </span>
+                <span className="text-red-600">{settings.logoSuffix}</span>
               </h2>
 
               <div className="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
-                <p>
-                  Di balik mitos dan legenda yang diwariskan dari generasi ke generasi, tersimpan kisah-kisah kelam tentang makhluk-makhluk yang bersembunyi di luar jangkauan pandangan manusia. Mereka hidup dalam bayang-bayang, menghuni tempat-tempat yang terlupakan, dan menunggu saatnya untuk menampakkan diri.
-                </p>
-                <p>
-                  Ketika kegelapan mulai mengusik kehidupan manusia, sekelompok ksatria bangkit untuk menghadapi teror yang tak mampu dijelaskan oleh akal. Mereka adalah Sang Penjaga, para pelindung yang mempertaruhkan nyawa demi menjaga manusia dari ancaman dunia gaib.
-                </p>
-                <p className="text-gold font-medium italic">
-                  Terinspirasi dari kekayaan mitos, legenda, dan kisah mistis Nusantara.
-                </p>
+                {settings.aboutParagraph1 && <p>{settings.aboutParagraph1}</p>}
+                {settings.aboutParagraph2 && <p>{settings.aboutParagraph2}</p>}
+                {settings.aboutHighlight && (
+                  <p className="text-gold font-medium italic">
+                    {settings.aboutHighlight}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
