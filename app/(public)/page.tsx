@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Shield, Sparkles } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
 import HeroBanner from '@/components/home/HeroBanner'
 import ComicSection from '@/components/home/ComicSection'
 import { db } from '@/lib/db'
@@ -103,14 +103,6 @@ export default async function HomePage() {
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>Mulai Membaca</span>
-                </Link>
-
-                <Link
-                  href="/tentang"
-                  className="inline-flex items-center gap-2 border border-dark-border hover:border-gold text-gray-300 hover:text-white font-heading font-medium text-sm sm:text-base px-6 py-3 rounded-lg bg-dark-card hover:bg-dark-hover transition-colors"
-                >
-                  <Sparkles className="w-4 h-4 text-gold" />
-                  <span>Tentang Cerita</span>
                 </Link>
               </div>
             </div>
