@@ -13,6 +13,7 @@ import { db } from '@/lib/db'
 import { comics, chapters, pages, subscriptions } from '@/lib/schema'
 import { eq, and, asc, gt } from 'drizzle-orm'
 import { validateRequest } from '@/lib/auth'
+import ChapterMusicPlayer from '@/components/reader/ChapterMusicPlayer'
 
 export const runtime = 'edge'
 export const revalidate = 0
@@ -308,6 +309,12 @@ export default async function ReaderPage({ params }: PageProps) {
           )}
         </div>
       </main>
+
+      {/* Background YouTube Music Player */}
+      <ChapterMusicPlayer
+        musicUrl={currentChapter?.musicUrl}
+        chapterTitle={currentChapter?.title}
+      />
     </div>
   )
 }

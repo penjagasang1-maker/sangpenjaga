@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { comics, chapters, pages } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
-import { eq, asc, desc } from 'drizzle-orm'
+import { eq, asc, desc, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -76,7 +76,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { chapterNumber, title, isFree, price, pageImages } = body
+    const { chapterNumber, title, isFree, price, pageImages, musicUrl } = body
 
     if (!title || chapterNumber === undefined) {
       return NextResponse.json(
@@ -92,6 +92,9 @@ export async function POST(
       )
     }
 
+    // Ensure music_url column exists in TiDB
+    await db.execute(sql`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS music_url VARCHAR(500);`).catch(() => {})
+
     // 1. Insert Chapter
     const result = await db.insert(chapters).values({
       comicId,
@@ -99,6 +102,7 @@ export async function POST(
       title,
       isFree: isFree !== false,
       price: isFree ? 0 : parseInt(price || '0'),
+      musicUrl: musicUrl ? String(musicUrl).trim() : null,
     })
 
     const chapterId = (result as any)?.insertId

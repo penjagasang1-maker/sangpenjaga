@@ -56,6 +56,7 @@ export const chapters = mysqlTable('chapters', {
   title: varchar('title', { length: 255 }).notNull(),
   isFree: boolean('is_free').default(true).notNull(),
   price: int('price').default(0).notNull(),
+  musicUrl: varchar('music_url', { length: 500 }),
   publishedAt: timestamp('published_at').defaultNow(),
 })
 

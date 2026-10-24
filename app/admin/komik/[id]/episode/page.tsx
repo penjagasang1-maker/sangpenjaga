@@ -15,6 +15,7 @@ import {
   Eye,
   Lock,
   Unlock,
+  Music,
 } from 'lucide-react'
 import { compressImage } from '@/lib/compress'
 
@@ -33,6 +34,7 @@ interface ChapterItem {
   price: number
   pageCount: number
   publishedAt: string
+  musicUrl?: string | null
 }
 
 export default function AdminEpisodePage() {
@@ -51,6 +53,7 @@ export default function AdminEpisodePage() {
   const [chapterTitle, setChapterTitle] = useState('')
   const [isFree, setIsFree] = useState(true)
   const [price, setPrice] = useState('0')
+  const [musicUrl, setMusicUrl] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -155,6 +158,7 @@ export default function AdminEpisodePage() {
           title: chapterTitle || `Chapter ${chapterNumber}`,
           isFree,
           price: isFree ? 0 : parseInt(price || '0'),
+          musicUrl: musicUrl.trim() || null,
           pageImages: uploadedPages,
         }),
       })
@@ -171,6 +175,7 @@ export default function AdminEpisodePage() {
       setPreviews([])
       setChapterTitle('')
       setPrice('0')
+      setMusicUrl('')
       fetchComicAndChapters()
     } catch (err: unknown) {
       setMessage({
@@ -384,6 +389,26 @@ export default function AdminEpisodePage() {
                   </div>
                 </label>
               </div>
+            </div>
+
+            {/* YouTube BGM / Music */}
+            <div className="p-4 rounded-xl bg-dark border border-dark-border space-y-2">
+              <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Musik Latar / BGM YouTube (Opsional)
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Contoh: https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                  value={musicUrl}
+                  onChange={(e) => setMusicUrl(e.target.value)}
+                  className="w-full bg-dark-card border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none pl-10"
+                />
+                <Music className="w-4 h-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+              <p className="text-xs text-gray-400">
+                Musik akan diputar otomatis saat pembaca pertama kali mengklik atau menggulir (scroll) halaman komik.
+              </p>
             </div>
 
             {/* Multi-page Image Uploader */}
