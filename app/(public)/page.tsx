@@ -74,18 +74,22 @@ export default async function HomePage() {
             <div className="absolute -top-24 -right-24 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs font-semibold uppercase tracking-wider">
-                <Shield className="w-3.5 h-3.5" />
-                <span>Semesta Sang Penjaga</span>
-              </div>
-
-              <h2 className="font-heading font-extrabold text-2xl sm:text-4xl lg:text-5xl text-white tracking-tight leading-tight mb-4">
-                Pahlawan Nusantara di Era Modern
+              <h2 className="font-heading font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight leading-tight mb-6">
+                <span className="text-white">SANG </span>
+                <span className="text-red-600">PENJAGA</span>
               </h2>
 
-              <p className="text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed mb-8">
-                Sang Penjaga adalah kisah kepahlawanan yang memadukan warisan mistis nusantara dengan aksi modern berkecepatan tinggi. Jelajahi pertarungan epik, konflik rahasia pelindung bumi, dan temukan takdir para kesatria yang menjaga kedamaian dunia.
-              </p>
+              <div className="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed mb-8">
+                <p>
+                  Di balik mitos dan legenda yang diwariskan dari generasi ke generasi, tersimpan kisah-kisah kelam tentang makhluk-makhluk yang bersembunyi di luar jangkauan pandangan manusia. Mereka hidup dalam bayang-bayang, menghuni tempat-tempat yang terlupakan, dan menunggu saatnya untuk menampakkan diri.
+                </p>
+                <p>
+                  Ketika kegelapan mulai mengusik kehidupan manusia, sekelompok ksatria bangkit untuk menghadapi teror yang tak mampu dijelaskan oleh akal. Mereka adalah Sang Penjaga, para pelindung yang mempertaruhkan nyawa demi menjaga manusia dari ancaman dunia gaib.
+                </p>
+                <p className="text-gold font-medium italic">
+                  Terinspirasi dari kekayaan mitos, legenda, dan kisah mistis Nusantara.
+                </p>
+              </div>
 
               <div className="flex flex-wrap items-center gap-4">
                 <Link
