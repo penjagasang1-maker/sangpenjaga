@@ -12,6 +12,10 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  KeyRound,
+  X,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 
 interface UserItem {
@@ -31,6 +35,50 @@ export default function AdminUsersPage() {
   const [currentUserRole, setCurrentUserRole] = useState<string>('admin')
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Reset Password Modal State
+  const [resetModalUser, setResetModalUser] = useState<UserItem | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [showModalPassword, setShowModalPassword] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetModalUser) return
+
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Kata sandi minimal 6 karakter' })
+      return
+    }
+
+    try {
+      setResetLoading(true)
+      setMessage(null)
+
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: resetModalUser.id,
+          newPassword,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setMessage({ type: 'success', text: data.message })
+        setResetModalUser(null)
+        setNewPassword('')
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Gagal mereset kata sandi' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Terjadi kesalahan jaringan' })
+    } finally {
+      setResetLoading(false)
+    }
+  }
 
   const fetchUsers = async () => {
     try {
@@ -285,49 +333,160 @@ export default function AdminUsersPage() {
 
                     {/* Actions */}
                     <td className="px-6 py-4 text-right">
-                      {isTargetSuperAdmin ? (
-                        <span className="text-xs text-gray-500 italic">
-                          Pemilik Utama
-                        </span>
-                      ) : isSuperAdmin ? (
-                        isTargetAdmin ? (
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Reset Password button */}
+                        {(!isTargetSuperAdmin || isSuperAdmin) && (
                           <button
-                            onClick={() => handleRoleChange(u.id, 'user')}
-                            disabled={isProcessing}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                            type="button"
+                            onClick={() => {
+                              setResetModalUser(u)
+                              setNewPassword('')
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark px-2.5 py-1.5 text-xs font-medium text-gray-300 hover:text-gold hover:border-gold/50 transition-colors"
+                            title="Reset kata sandi pengguna ini"
                           >
-                            {isProcessing ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                            )}
-                            Turunkan ke User
+                            <KeyRound className="w-3.5 h-3.5 text-gold" />
+                            Reset Sandi
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => handleRoleChange(u.id, 'admin')}
-                            disabled={isProcessing}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold hover:text-black transition-colors disabled:opacity-50"
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            )}
-                            Jadikan Admin
-                          </button>
-                        )
-                      ) : (
-                        <span className="text-xs text-gray-500">
-                          Hanya Superadmin
-                        </span>
-                      )}
+                        )}
+
+                        {isTargetSuperAdmin ? (
+                          <span className="text-xs text-gray-500 italic">
+                            Pemilik Utama
+                          </span>
+                        ) : isSuperAdmin ? (
+                          isTargetAdmin ? (
+                            <button
+                              onClick={() => handleRoleChange(u.id, 'user')}
+                              disabled={isProcessing}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <ShieldAlert className="w-3.5 h-3.5" />
+                              )}
+                              Turunkan ke User
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRoleChange(u.id, 'admin')}
+                              disabled={isProcessing}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gold/40 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold hover:text-black transition-colors disabled:opacity-50"
+                            >
+                              {isProcessing ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              )}
+                              Jadikan Admin
+                            </button>
+                          )
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-2xl border border-dark-border bg-dark-card p-6 shadow-2xl">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setResetModalUser(null)
+                setNewPassword('')
+              }}
+              className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 border border-gold/25 text-gold">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-white">Reset Kata Sandi</h3>
+                <p className="text-xs text-gray-400">
+                  Akun: <span className="text-gold font-medium">{resetModalUser.username}</span> ({resetModalUser.email})
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                  Kata Sandi Baru
+                </label>
+                <div className="relative">
+                  <input
+                    type={showModalPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimal 6 karakter"
+                    className="w-full rounded-lg border border-dark-border bg-dark pl-4 pr-11 py-2.5 text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPassword(!showModalPassword)}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors p-1"
+                    aria-label={showModalPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  >
+                    {showModalPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[11px] text-gray-500">
+                    Kirim sandi ini ke user setelah disimpan.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rand = Math.random().toString(36).slice(-8)
+                      setNewPassword(rand)
+                    }}
+                    className="text-[11px] text-gold hover:underline"
+                  >
+                    Acak Sandi
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetModalUser(null)
+                    setNewPassword('')
+                  }}
+                  className="rounded-lg border border-dark-border bg-dark px-4 py-2 text-xs font-medium text-gray-300 hover:text-white transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading || newPassword.length < 6}
+                  className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-xs font-semibold text-black hover:bg-gold-light transition-colors disabled:opacity-50 shadow-md shadow-gold/20"
+                >
+                  {resetLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Simpan Sandi Baru
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

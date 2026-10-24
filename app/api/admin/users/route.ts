@@ -103,3 +103,83 @@ export async function PATCH(request: Request) {
     )
   }
 }
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  )
+  const hash = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    256
+  )
+  const hashArray = new Uint8Array(hash)
+  const saltHex = Array.from(salt).map((b) => b.toString(16).padStart(2, '0')).join('')
+  const hashHex = Array.from(hashArray).map((b) => b.toString(16).padStart(2, '0')).join('')
+  return `${saltHex}:${hashHex}`
+}
+
+export async function POST(request: Request) {
+  try {
+    const { user } = await validateRequest()
+
+    if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
+      return NextResponse.json({ error: 'Akses ditolak' }, { status: 401 })
+    }
+
+    const { userId, newPassword } = await request.json()
+
+    if (!userId || !newPassword || newPassword.length < 6) {
+      return NextResponse.json(
+        { error: 'Kata sandi minimal 6 karakter' },
+        { status: 400 }
+      )
+    }
+
+    const existingUsers = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+
+    if (existingUsers.length === 0) {
+      return NextResponse.json({ error: 'Pengguna tidak ditemukan' }, { status: 404 })
+    }
+
+    const target = existingUsers[0]
+
+    // Only superadmin can reset superadmin's password
+    if (target.role === 'superadmin' && user.role !== 'superadmin') {
+      return NextResponse.json(
+        { error: 'Hanya Superadmin yang berhak mereset akun Superadmin' },
+        { status: 403 }
+      )
+    }
+
+    const hashedPassword = await hashPassword(newPassword)
+    await db
+      .update(users)
+      .set({ hashedPassword })
+      .where(eq(users.id, userId))
+
+    return NextResponse.json({
+      success: true,
+      message: `Kata sandi akun ${target.username} (${target.email}) berhasil direset!`,
+    })
+  } catch (error) {
+    console.error('Reset password error:', error)
+    return NextResponse.json({ error: 'Gagal mereset kata sandi' }, { status: 500 })
+  }
+}
+
