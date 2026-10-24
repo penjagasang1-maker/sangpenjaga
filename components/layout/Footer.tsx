@@ -4,22 +4,24 @@ export default function Footer() {
   return (
     <footer className="w-full bg-dark-card border-t border-dark-border text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-10">
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-10 mb-10">
           {/* Logo & Description */}
-          <div className="max-w-md">
+          <div className="max-w-sm">
             <Link
               href="/"
-              className="font-heading font-extrabold text-2xl text-red-600 tracking-wider inline-block mb-3"
+              className="font-heading font-extrabold text-2xl tracking-wider inline-block mb-3"
             >
-              SANG PENJAGA
+              <span className="text-white">SANG </span>
+              <span className="text-red-600">PENJAGA</span>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
               Platform baca komik digital resmi Sang Penjaga. Jelajahi petualangan epik, karakter legendaris, dan cerita seru karya komikus tanah air.
             </p>
           </div>
 
-          {/* Links Column */}
-          <div className="flex flex-col sm:flex-row gap-8 sm:gap-16">
+          {/* Links Columns */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 sm:gap-10 w-full lg:w-auto">
+            {/* Navigasi */}
             <div>
               <h3 className="text-white font-heading font-semibold text-sm tracking-wider uppercase mb-3">
                 Navigasi
@@ -36,6 +38,11 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/langganan" className="hover:text-gold transition-colors">
+                    VIP Langganan
+                  </Link>
+                </li>
+                <li>
                   <Link href="/tentang" className="hover:text-gold transition-colors">
                     Tentang Kami
                   </Link>
@@ -43,9 +50,10 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* Bantuan & Hukum */}
             <div>
               <h3 className="text-white font-heading font-semibold text-sm tracking-wider uppercase mb-3">
-                Bantuan & Hukum
+                Bantuan &amp; Hukum
               </h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -55,7 +63,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link href="/syarat-ketentuan" className="hover:text-gold transition-colors">
-                    Syarat & Ketentuan
+                    Syarat &amp; Ketentuan
                   </Link>
                 </li>
                 <li>
@@ -63,11 +71,47 @@ export default function Footer() {
                     Kebijakan Privasi
                   </Link>
                 </li>
+                <li>
+                  <Link href="/refund-policy" className="hover:text-gold transition-colors">
+                    Kebijakan Refund
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Social Media Placeholder */}
+            {/* Kontak Kami */}
             <div>
+              <h3 className="text-white font-heading font-semibold text-sm tracking-wider uppercase mb-3">
+                Kontak Kami
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <span className="text-gray-500 block text-xs">Email:</span>
+                  <a
+                    href="mailto:mrizqi045@gmail.com"
+                    className="text-gray-300 hover:text-gold transition-colors break-all"
+                  >
+                    mrizqi045@gmail.com
+                  </a>
+                </li>
+                <li>
+                  <span className="text-gray-500 block text-xs">Telepon:</span>
+                  <a
+                    href="tel:087880503974"
+                    className="text-gray-300 hover:text-gold transition-colors"
+                  >
+                    087880503974
+                  </a>
+                </li>
+                <li>
+                  <span className="text-gray-500 block text-xs">Alamat:</span>
+                  <span className="text-gray-300">Cipinang melayu, 13620</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Social Media */}
+            <div className="col-span-2 sm:col-span-1">
               <h3 className="text-white font-heading font-semibold text-sm tracking-wider uppercase mb-3">
                 Ikuti Kami
               </h3>
