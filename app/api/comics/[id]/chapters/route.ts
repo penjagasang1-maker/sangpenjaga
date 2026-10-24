@@ -95,39 +95,88 @@ export async function POST(
     // Ensure music_url column exists in TiDB
     await db.execute(sql`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS music_url VARCHAR(500);`).catch(() => {})
 
-    // 1. Insert Chapter
-    const result = await db.insert(chapters).values({
-      comicId,
-      chapterNumber: parseInt(chapterNumber),
-      title,
-      isFree: isFree !== false,
-      price: isFree ? 0 : parseInt(price || '0'),
-      musicUrl: musicUrl ? String(musicUrl).trim() : null,
-    })
+    const parsedChapNum = parseInt(chapterNumber)
 
-    const chapterId = (result as any)?.insertId
+    // Check if this chapter number already exists for this comic
+    const [existingChapter] = await db
+      .select({ id: chapters.id })
+      .from(chapters)
+      .where(
+        and(
+          eq(chapters.comicId, comicId),
+          eq(chapters.chapterNumber, parsedChapNum)
+        )
+      )
+      .limit(1)
+
+    let chapterId: number
+
+    if (existingChapter) {
+      chapterId = existingChapter.id
+      await db
+        .update(chapters)
+        .set({
+          title,
+          isFree: isFree !== false,
+          price: isFree ? 0 : parseInt(price || '0'),
+          musicUrl: musicUrl ? String(musicUrl).trim() : null,
+        })
+        .where(eq(chapters.id, chapterId))
+
+      // Clean old pages if any exist
+      await db.delete(pages).where(eq(pages.chapterId, chapterId))
+    } else {
+      // 1. Insert New Chapter
+      const result = await db.insert(chapters).values({
+        comicId,
+        chapterNumber: parsedChapNum,
+        title,
+        isFree: isFree !== false,
+        price: isFree ? 0 : parseInt(price || '0'),
+        musicUrl: musicUrl ? String(musicUrl).trim() : null,
+      })
+
+      chapterId = (result as any)?.[0]?.insertId || (result as any)?.insertId
+
+      if (!chapterId) {
+        const [latest] = await db
+          .select({ id: chapters.id })
+          .from(chapters)
+          .where(eq(chapters.comicId, comicId))
+          .orderBy(desc(chapters.id))
+          .limit(1)
+        chapterId = latest?.id
+      }
+    }
+
+    if (!chapterId) {
+      throw new Error('Gagal mendapatkan ID chapter database')
+    }
 
     // 2. Insert Pages
     for (let i = 0; i < pageImages.length; i++) {
       const p = pageImages[i]
+      const imageUrl = typeof p === 'string' ? p : p.imageUrl || p.url
+      if (!imageUrl) continue
+
       await db.insert(pages).values({
-        chapterId,
+        chapterId: Number(chapterId),
         pageNumber: i + 1,
-        imageUrl: typeof p === 'string' ? p : p.imageUrl || p.url,
-        width: typeof p === 'object' ? p.width : null,
-        height: typeof p === 'object' ? p.height : null,
+        imageUrl,
+        width: typeof p === 'object' ? p.width || null : null,
+        height: typeof p === 'object' ? p.height || null : null,
       })
     }
 
     return NextResponse.json({
       success: true,
       chapterId,
-      message: `Episode ${chapterNumber}: "${title}" dengan ${pageImages.length} lembar berhasil disimpan!`,
+      message: `Episode ${parsedChapNum}: "${title}" dengan ${pageImages.length} lembar berhasil disimpan!`,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create chapter error:', error)
     return NextResponse.json(
-      { error: 'Gagal membuat episode/chapter' },
+      { error: error?.message || 'Gagal membuat episode/chapter' },
       { status: 500 }
     )
   }
