@@ -26,34 +26,78 @@ function extractYouTubeId(url: string): string | null {
   return match ? match[1] : null
 }
 
+function isDirectAudioFile(url: string): boolean {
+  if (!url) return false
+  const clean = url.toLowerCase().split('?')[0]
+  return (
+    clean.endsWith('.mp3') ||
+    clean.endsWith('.wav') ||
+    clean.endsWith('.ogg') ||
+    clean.endsWith('.m4a') ||
+    clean.endsWith('.aac') ||
+    url.includes('/music/') ||
+    url.includes('audio')
+  )
+}
+
 export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps) {
-  const videoId = musicUrl ? extractYouTubeId(musicUrl) : null
+  const isAudio = musicUrl ? isDirectAudioFile(musicUrl) : false
+  const videoId = !isAudio && musicUrl ? extractYouTubeId(musicUrl) : null
+
+  const audioRef = useRef<HTMLAudioElement>(null)
   const playerRef = useRef<any>(null)
   const isReadyRef = useRef(false)
-  const hasTriggeredRef = useRef(false)
+  const isPlayingRef = useRef(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
 
-  // Start video playback
-  const startPlaying = () => {
-    hasTriggeredRef.current = true
-    if (playerRef.current && isReadyRef.current) {
-      try {
-        playerRef.current.unMute()
-        playerRef.current.setVolume(75)
-        playerRef.current.playVideo()
-        setIsPlaying(true)
-        setIsMuted(false)
-      } catch (err) {
-        console.warn('Play video failed:', err)
-      }
-    }
-  }
-
-  // Initialize YouTube IFrame Player
+  // Sync ref with state
   useEffect(() => {
-    if (!videoId) return
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
+
+  // --- Engine 1: Native HTML5 Audio (Direct MP3 / WAV / OGG) ---
+  useEffect(() => {
+    if (!isAudio || !musicUrl) return
+
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleAutoPlay = () => {
+      if (isPlayingRef.current) return
+      audio
+        .play()
+        .then(() => {
+          setIsPlaying(true)
+          setIsMuted(false)
+        })
+        .catch(() => {
+          // Browser may require another gesture
+        })
+    }
+
+    window.addEventListener('scroll', handleAutoPlay, { passive: true })
+    window.addEventListener('touchstart', handleAutoPlay, { passive: true })
+    window.addEventListener('touchmove', handleAutoPlay, { passive: true })
+    window.addEventListener('pointerdown', handleAutoPlay, { passive: true })
+    window.addEventListener('click', handleAutoPlay, { passive: true })
+    window.addEventListener('wheel', handleAutoPlay, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleAutoPlay)
+      window.removeEventListener('touchstart', handleAutoPlay)
+      window.removeEventListener('touchmove', handleAutoPlay)
+      window.removeEventListener('pointerdown', handleAutoPlay)
+      window.removeEventListener('click', handleAutoPlay)
+      window.removeEventListener('wheel', handleAutoPlay)
+      audio.pause()
+    }
+  }, [isAudio, musicUrl])
+
+  // --- Engine 2: YouTube IFrame API (Muted Autoplay + Scroll Unmute) ---
+  useEffect(() => {
+    if (isAudio || !videoId) return
 
     let isMounted = true
 
@@ -65,7 +109,8 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
         playerRef.current = new window.YT.Player('yt-bgm-element', {
           videoId,
           playerVars: {
-            autoplay: 0,
+            autoplay: 1, // Start autoplaying muted immediately
+            mute: 1,     // Mobile browsers allow autoplay when muted!
             controls: 0,
             loop: 1,
             playlist: videoId,
@@ -78,34 +123,23 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
             onReady: (event: any) => {
               if (!isMounted) return
               isReadyRef.current = true
-              // If user already scrolled or touched while loading, play immediately
-              if (hasTriggeredRef.current) {
-                try {
-                  event.target.unMute()
-                  event.target.setVolume(75)
-                  event.target.playVideo()
-                  setIsPlaying(true)
-                } catch (e) {
-                  console.warn(e)
-                }
-              }
+              try {
+                event.target.playVideo()
+              } catch {}
             },
             onStateChange: (event: any) => {
               if (!isMounted) return
-              // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+              // 1 = PLAYING
               if (event.data === 1) {
+                // If audio is unmuted and volume > 0, consider it active
                 setIsPlaying(true)
               } else if (event.data === 2) {
                 setIsPlaying(false)
               } else if (event.data === 0) {
-                // Loop
                 try {
                   event.target.playVideo()
                 } catch {}
               }
-            },
-            onError: (event: any) => {
-              console.warn('YouTube BGM Player error:', event.data)
             },
           },
         })
@@ -132,26 +166,34 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
       }
     }
 
-    // Scroll & touch listeners to start music automatically
-    const handleScrollTrigger = () => {
-      if (!hasTriggeredRef.current) {
-        startPlaying()
+    // Scroll & touch listener to UNMUTE and ensure playback with sound
+    const handleUnmuteOnScroll = () => {
+      if (playerRef.current && isReadyRef.current) {
+        try {
+          playerRef.current.unMute()
+          playerRef.current.setVolume(75)
+          playerRef.current.playVideo()
+          setIsPlaying(true)
+          setIsMuted(false)
+        } catch {}
       }
     }
 
-    window.addEventListener('scroll', handleScrollTrigger, { passive: true })
-    window.addEventListener('touchmove', handleScrollTrigger, { passive: true })
-    window.addEventListener('touchstart', handleScrollTrigger, { passive: true })
-    window.addEventListener('pointerdown', handleScrollTrigger, { passive: true })
-    window.addEventListener('wheel', handleScrollTrigger, { passive: true })
+    window.addEventListener('scroll', handleUnmuteOnScroll, { passive: true })
+    window.addEventListener('touchstart', handleUnmuteOnScroll, { passive: true })
+    window.addEventListener('touchmove', handleUnmuteOnScroll, { passive: true })
+    window.addEventListener('pointerdown', handleUnmuteOnScroll, { passive: true })
+    window.addEventListener('wheel', handleUnmuteOnScroll, { passive: true })
+    window.addEventListener('click', handleUnmuteOnScroll, { passive: true })
 
     return () => {
       isMounted = false
-      window.removeEventListener('scroll', handleScrollTrigger)
-      window.removeEventListener('touchmove', handleScrollTrigger)
-      window.removeEventListener('touchstart', handleScrollTrigger)
-      window.removeEventListener('pointerdown', handleScrollTrigger)
-      window.removeEventListener('wheel', handleScrollTrigger)
+      window.removeEventListener('scroll', handleUnmuteOnScroll)
+      window.removeEventListener('touchstart', handleUnmuteOnScroll)
+      window.removeEventListener('touchmove', handleUnmuteOnScroll)
+      window.removeEventListener('pointerdown', handleUnmuteOnScroll)
+      window.removeEventListener('wheel', handleUnmuteOnScroll)
+      window.removeEventListener('click', handleUnmuteOnScroll)
 
       if (playerRef.current && typeof playerRef.current.destroy === 'function') {
         try {
@@ -160,53 +202,89 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
         playerRef.current = null
       }
     }
-  }, [videoId])
+  }, [isAudio, videoId])
 
-  if (!videoId) return null
+  if (!isAudio && !videoId) return null
 
+  // Universal Toggle Play / Pause
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!playerRef.current || !isReadyRef.current) {
-      startPlaying()
+
+    if (isAudio && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
+      }
       return
     }
 
-    if (isPlaying) {
-      try {
-        playerRef.current.pauseVideo()
-        setIsPlaying(false)
-      } catch {}
-    } else {
-      startPlaying()
+    if (playerRef.current && isReadyRef.current) {
+      if (isPlaying) {
+        try {
+          playerRef.current.pauseVideo()
+          setIsPlaying(false)
+        } catch {}
+      } else {
+        try {
+          playerRef.current.unMute()
+          playerRef.current.setVolume(75)
+          playerRef.current.playVideo()
+          setIsPlaying(true)
+          setIsMuted(false)
+        } catch {}
+      }
     }
   }
 
+  // Universal Toggle Mute / Unmute
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!playerRef.current || !isReadyRef.current) return
 
-    if (isMuted) {
-      try {
-        playerRef.current.unMute()
-        setIsMuted(false)
-      } catch {}
-    } else {
-      try {
-        playerRef.current.mute()
-        setIsMuted(true)
-      } catch {}
+    if (isAudio && audioRef.current) {
+      audioRef.current.muted = !isMuted
+      setIsMuted(!isMuted)
+      return
+    }
+
+    if (playerRef.current && isReadyRef.current) {
+      if (isMuted) {
+        try {
+          playerRef.current.unMute()
+          setIsMuted(false)
+        } catch {}
+      } else {
+        try {
+          playerRef.current.mute()
+          setIsMuted(true)
+        } catch {}
+      }
     }
   }
 
   return (
     <>
-      {/* Active YouTube Container with minimal dimensions so mobile browsers don't suspend playback */}
-      <div
-        className="fixed bottom-0 right-0 w-8 h-8 pointer-events-none opacity-[0.01] overflow-hidden z-[-1]"
-        aria-hidden="true"
-      >
-        <div id="yt-bgm-element" />
-      </div>
+      {/* Engine 1: Native HTML5 Audio */}
+      {isAudio && musicUrl && (
+        <audio
+          ref={audioRef}
+          src={musicUrl}
+          loop
+          preload="auto"
+          playsInline
+        />
+      )}
+
+      {/* Engine 2: YouTube Container with safe active dimensions for mobile browser permission */}
+      {!isAudio && videoId && (
+        <div
+          className="fixed bottom-2 right-2 w-12 h-12 opacity-[0.01] overflow-hidden pointer-events-auto z-10"
+          aria-hidden="true"
+        >
+          <div id="yt-bgm-element" />
+        </div>
+      )}
 
       {/* Floating Mini Player Widget (Bottom-Right) */}
       <aside aria-label="Pemutar musik latar chapter" className="fixed bottom-5 right-5 z-40">

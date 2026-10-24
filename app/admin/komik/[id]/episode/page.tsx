@@ -54,10 +54,47 @@ export default function AdminEpisodePage() {
   const [isFree, setIsFree] = useState(true)
   const [price, setPrice] = useState('0')
   const [musicUrl, setMusicUrl] = useState('')
+  const [uploadingAudio, setUploadingAudio] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAudio(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'music')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Gagal mengunggah file musik')
+      }
+
+      const data = await res.json()
+      setMusicUrl(data.url)
+      setMessage({
+        type: 'success',
+        text: `File audio "${file.name}" berhasil diunggah ke CDN! Musik siap diputar di HP.`,
+      })
+    } catch (err: any) {
+      setMessage({
+        type: 'error',
+        text: err?.message || 'Gagal mengunggah audio',
+      })
+    } finally {
+      setUploadingAudio(false)
+    }
+  }
 
   const fetchComicAndChapters = async () => {
     try {
@@ -391,23 +428,49 @@ export default function AdminEpisodePage() {
               </div>
             </div>
 
-            {/* YouTube BGM / Music */}
-            <div className="p-4 rounded-xl bg-dark border border-dark-border space-y-2">
-              <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider">
-                Musik Latar / BGM YouTube (Opsional)
-              </label>
+            {/* BGM / Music Input (MP3 or YouTube) */}
+            <div className="p-4 rounded-xl bg-dark border border-dark-border space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Musik Latar / BGM (MP3 atau YouTube)
+                </label>
+                <span className="text-[11px] text-gold font-semibold">
+                  Rekomendasi: Upload MP3 (100% Bunyi di HP)
+                </span>
+              </div>
+
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Contoh: https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                  placeholder="Paste URL MP3, atau URL YouTube (https://youtu.be/...)"
                   value={musicUrl}
                   onChange={(e) => setMusicUrl(e.target.value)}
                   className="w-full bg-dark-card border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none pl-10"
                 />
                 <Music className="w-4 h-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
-              <p className="text-xs text-gray-400">
-                Musik akan diputar otomatis saat pembaca pertama kali mengklik atau menggulir (scroll) halaman komik.
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold/15 hover:bg-gold/25 border border-gold/40 text-xs font-semibold text-gold cursor-pointer transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingAudio ? 'Mengunggah MP3...' : 'Upload File Audio (MP3/WAV)'}</span>
+                  <input
+                    type="file"
+                    accept="audio/*,.mp3,.wav,.ogg,.m4a"
+                    className="hidden"
+                    disabled={uploadingAudio}
+                    onChange={handleAudioUpload}
+                  />
+                </label>
+                {musicUrl && (
+                  <span className="text-xs text-gray-400 font-mono truncate max-w-xs sm:max-w-md">
+                    Aktif: {musicUrl}
+                  </span>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Musik akan diputar otomatis saat pembaca menggulir (scroll) komik. File MP3 langsung dimainkan oleh pemutar audio bawaan HP.
               </p>
             </div>
 
