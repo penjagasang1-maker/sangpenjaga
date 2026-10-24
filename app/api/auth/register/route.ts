@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Register error:', error)
     return NextResponse.json(
-      { error: 'Terjadi kesalahan server' },
+      { error: (error as Error)?.message || 'Terjadi kesalahan server' },
       { status: 500 }
     )
   }

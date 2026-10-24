@@ -42,7 +42,7 @@ export default function RegisterPage() {
       const data = await res.json().catch(() => null)
 
       if (!res.ok) {
-        throw new Error(data?.message || 'Pendaftaran gagal. Silakan coba kembali.')
+        throw new Error(data?.error || data?.message || 'Pendaftaran gagal. Silakan coba kembali.')
       }
 
       router.push('/login?registered=true')
