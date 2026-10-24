@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { comics, chapters, pages } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
-import { eq, asc, desc, sql } from 'drizzle-orm'
+import { eq, and, asc, desc, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
