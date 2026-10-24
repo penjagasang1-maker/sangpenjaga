@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, Pagination, Navigation } from 'swiper/modules'
@@ -29,7 +28,7 @@ export default function HeroBanner({ slides = [] }: HeroBannerProps) {
   // Empty placeholder fallback
   if (!slides || slides.length === 0) {
     return (
-      <div className="relative w-full h-52 sm:h-[400px] lg:h-[550px] xl:h-[650px] bg-dark-card border-b border-dark-border flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-56 sm:h-[400px] lg:h-[550px] xl:h-[650px] bg-dark-card border-b border-dark-border flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent z-10" />
         <div className="relative z-20 text-center px-4 max-w-2xl">
           <span className="inline-block px-3 py-1 mb-3 text-xs font-semibold tracking-wider text-gold uppercase bg-gold/10 border border-gold/30 rounded-full">
@@ -50,7 +49,7 @@ export default function HeroBanner({ slides = [] }: HeroBannerProps) {
   const totalDisplay = String(slides.length).padStart(2, '0')
 
   return (
-    <div className="relative w-full h-52 sm:h-[400px] lg:h-[550px] xl:h-[650px] overflow-hidden group select-none">
+    <div className="relative w-full h-56 sm:h-[400px] lg:h-[550px] xl:h-[650px] overflow-hidden group select-none">
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         pagination={{
@@ -68,21 +67,27 @@ export default function HeroBanner({ slides = [] }: HeroBannerProps) {
       >
         {slides.map((slide) => {
           const content = (
-            <div className="relative w-full h-full">
-              <Image
+            <div className="relative w-full h-full bg-dark">
+              <img
                 src={slide.imageUrl}
                 alt={slide.title || `Slide ${slide.id}`}
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover object-center"
+                className="w-full h-full object-cover object-center select-none"
+                loading="eager"
+                decoding="async"
+                onError={(e) => {
+                  const target = e.currentTarget
+                  if (!target.dataset.fallback && slide.imageUrl.includes('cdn.sangpenjaga.com/')) {
+                    target.dataset.fallback = 'true'
+                    target.src = slide.imageUrl.replace('https://cdn.sangpenjaga.com/', '/api/cdn/')
+                  }
+                }}
               />
               {/* Dark overlay gradients */}
-              <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-dark/80 via-transparent to-dark/40" />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-dark/80 via-transparent to-dark/40 pointer-events-none" />
 
               {slide.title && (
-                <div className="absolute bottom-16 sm:bottom-20 left-4 sm:left-12 z-20 max-w-xl">
+                <div className="absolute bottom-16 sm:bottom-20 left-4 sm:left-12 z-20 max-w-xl pointer-events-none">
                   <h2 className="font-heading font-black text-2xl sm:text-4xl lg:text-5xl text-white drop-shadow-md">
                     {slide.title}
                   </h2>
