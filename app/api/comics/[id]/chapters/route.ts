@@ -27,6 +27,17 @@ export async function GET(
       return NextResponse.json({ error: 'Komik tidak ditemukan' }, { status: 404 })
     }
 
+    if (comic.slug && (comic.slug.includes(' ') || comic.slug.includes('%20'))) {
+      const cleanSlug = comic.slug
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+      await db.update(comics).set({ slug: cleanSlug }).where(eq(comics.id, comicId)).catch(() => {})
+      comic.slug = cleanSlug
+    }
+
     const chapterList = await db
       .select()
       .from(chapters)

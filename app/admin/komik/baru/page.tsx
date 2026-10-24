@@ -79,7 +79,10 @@ export default function TambahKomikPage() {
       const res = await fetch('/api/comics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          slug: generateSlug(form.slug || form.title),
+        }),
       })
 
       const data = await res.json()

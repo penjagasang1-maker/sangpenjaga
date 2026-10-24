@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, BookOpen, Eye, Lock, Unlock, Crown } from 'lucide-react'
 import { db } from '@/lib/db'
 import { comics, chapters } from '@/lib/schema'
-import { eq, asc } from 'drizzle-orm'
+import { eq, asc, or } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 
 export const runtime = 'edge'
@@ -17,15 +17,46 @@ export default async function KomikDetailPage({ params }: PageProps) {
   let chapterList: any[] = []
 
   try {
+    const rawSlug = params.slug || ''
+    let decodedSlug = ''
+    try {
+      decodedSlug = decodeURIComponent(rawSlug).trim()
+    } catch {
+      decodedSlug = rawSlug.trim()
+    }
+
+    const kebabSlug = decodedSlug
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+
+    const spaceSlug = decodedSlug.replace(/-/g, ' ').trim()
+
     const comicRows = await db
       .select()
       .from(comics)
-      .where(eq(comics.slug, params.slug))
+      .where(
+        or(
+          eq(comics.slug, rawSlug),
+          eq(comics.slug, decodedSlug),
+          eq(comics.slug, kebabSlug),
+          eq(comics.slug, spaceSlug),
+          eq(comics.title, decodedSlug),
+          eq(comics.title, spaceSlug)
+        )
+      )
       .limit(1)
 
     comic = comicRows[0] || null
 
     if (comic) {
+      if (comic.slug && (comic.slug.includes(' ') || comic.slug.includes('%20'))) {
+        const clean = comic.slug.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')
+        db.update(comics).set({ slug: clean }).where(eq(comics.id, comic.id)).catch(() => {})
+        comic.slug = clean
+      }
       chapterList = await db
         .select()
         .from(chapters)
@@ -127,7 +158,7 @@ export default async function KomikDetailPage({ params }: PageProps) {
           {chapterList.length > 0 && (
             <div className="mt-8 pt-6 border-t border-dark-border">
               <Link
-                href={`/komik/${params.slug}/${chapterList[0].chapterNumber}`}
+                href={`/komik/${comic.slug || params.slug}/${chapterList[0].chapterNumber}`}
                 className="inline-flex items-center gap-2 rounded-lg bg-gold hover:bg-gold-light px-6 py-3 font-heading font-bold text-sm text-black transition-all shadow-lg shadow-gold/20"
               >
                 <BookOpen className="h-4 w-4" />
@@ -163,7 +194,7 @@ export default async function KomikDetailPage({ params }: PageProps) {
             {chapterList.map((chapter: any) => (
               <Link
                 key={chapter.id}
-                href={`/komik/${params.slug}/${chapter.chapterNumber}`}
+                href={`/komik/${comic.slug || params.slug}/${chapter.chapterNumber}`}
                 className="flex items-center justify-between rounded-xl border border-dark-border bg-dark-card p-4 hover:border-gold/50 hover:bg-dark-hover transition-all group"
               >
                 <div className="flex items-center gap-3.5">

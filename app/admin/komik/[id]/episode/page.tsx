@@ -143,9 +143,17 @@ export default function AdminEpisodePage() {
 
   useEffect(() => {
     if (comic) {
+      const cleanSlug = (str: string) =>
+        (str || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .trim()
+
       setComicForm({
         title: comic.title || '',
-        slug: comic.slug || '',
+        slug: cleanSlug(comic.slug || comic.title || ''),
         genre: comic.genre || '',
         status: comic.status || 'ongoing',
         synopsis: comic.synopsis || '',
@@ -189,11 +197,23 @@ export default function AdminEpisodePage() {
   const handleSaveComic = async (e: React.FormEvent) => {
     e.preventDefault()
     setSavingComic(true)
+    const cleanSlug = (str: string) =>
+      (str || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim()
+
     try {
+      const payload = {
+        ...comicForm,
+        slug: cleanSlug(comicForm.slug || comicForm.title),
+      }
       const res = await fetch(`/api/comics/${comicId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(comicForm),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Gagal memperbarui komik')

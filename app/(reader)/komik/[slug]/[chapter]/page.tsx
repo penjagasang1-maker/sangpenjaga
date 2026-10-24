@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { db } from '@/lib/db'
 import { comics, chapters, pages, subscriptions } from '@/lib/schema'
-import { eq, and, asc, gt } from 'drizzle-orm'
+import { eq, and, asc, gt, or } from 'drizzle-orm'
 import { validateRequest } from '@/lib/auth'
 import ComicReaderView from '@/components/reader/ComicReaderView'
 
@@ -25,16 +25,47 @@ export default async function ReaderPage({ params }: PageProps) {
   let hasVipAccess = false
 
   try {
+    const rawSlug = params.slug || ''
+    let decodedSlug = ''
+    try {
+      decodedSlug = decodeURIComponent(rawSlug).trim()
+    } catch {
+      decodedSlug = rawSlug.trim()
+    }
+
+    const kebabSlug = decodedSlug
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+
+    const spaceSlug = decodedSlug.replace(/-/g, ' ').trim()
+
     // 1. Fetch comic
     const [c] = await db
       .select()
       .from(comics)
-      .where(eq(comics.slug, params.slug))
+      .where(
+        or(
+          eq(comics.slug, rawSlug),
+          eq(comics.slug, decodedSlug),
+          eq(comics.slug, kebabSlug),
+          eq(comics.slug, spaceSlug),
+          eq(comics.title, decodedSlug),
+          eq(comics.title, spaceSlug)
+        )
+      )
       .limit(1)
 
     comic = c || null
 
     if (comic) {
+      if (comic.slug && (comic.slug.includes(' ') || comic.slug.includes('%20'))) {
+        const clean = comic.slug.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')
+        db.update(comics).set({ slug: clean }).where(eq(comics.id, comic.id)).catch(() => {})
+        comic.slug = clean
+      }
       // 2. Fetch current chapter
       const [chap] = await db
         .select()
@@ -110,7 +141,7 @@ export default async function ReaderPage({ params }: PageProps) {
           Episode {chapterNum} dari komik ini belum tersedia.
         </p>
         <Link
-          href={`/komik/${params.slug}`}
+          href={`/komik/${comic?.slug || params.slug}`}
           className="mt-6 inline-flex items-center gap-2 bg-gold px-5 py-2.5 rounded-lg text-sm font-semibold text-black hover:bg-gold-light"
         >
           <ArrowLeft className="w-4 h-4" />

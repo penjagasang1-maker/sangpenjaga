@@ -27,6 +27,17 @@ export async function GET(
       return NextResponse.json({ error: 'Komik tidak ditemukan' }, { status: 404 })
     }
 
+    if (comic.slug && (comic.slug.includes(' ') || comic.slug.includes('%20'))) {
+      const cleanSlug = comic.slug
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+      await db.update(comics).set({ slug: cleanSlug }).where(eq(comics.id, comicId)).catch(() => {})
+      comic.slug = cleanSlug
+    }
+
     return NextResponse.json({ comic })
   } catch (error: any) {
     console.error('Get comic error:', error)
@@ -57,7 +68,14 @@ export async function PUT(
     const body = await request.json()
     const { title, slug, synopsis, coverUrl, genre, status } = body
 
-    if (!title || !slug) {
+    const cleanSlug = (slug || title || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+
+    if (!title || !cleanSlug) {
       return NextResponse.json(
         { error: 'Judul dan slug komik wajib diisi' },
         { status: 400 }
@@ -68,7 +86,7 @@ export async function PUT(
       .update(comics)
       .set({
         title,
-        slug,
+        slug: cleanSlug,
         synopsis: synopsis || '',
         coverUrl: coverUrl || null,
         genre: genre || '',

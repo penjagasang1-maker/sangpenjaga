@@ -70,7 +70,14 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { title, slug, synopsis, coverUrl, genre, status: comicStatus } = body
 
-    if (!title || !slug) {
+    const cleanSlug = (slug || title || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+
+    if (!title || !cleanSlug) {
       return NextResponse.json(
         { error: 'Judul dan slug harus diisi' },
         { status: 400 }
@@ -81,7 +88,7 @@ export async function POST(request: Request) {
     const existing = await db
       .select()
       .from(comics)
-      .where(eq(comics.slug, slug))
+      .where(eq(comics.slug, cleanSlug))
       .limit(1)
 
     if (existing.length > 0) {
@@ -93,7 +100,7 @@ export async function POST(request: Request) {
 
     const result = await db.insert(comics).values({
       title,
-      slug,
+      slug: cleanSlug,
       synopsis: synopsis || '',
       coverUrl: coverUrl || '',
       genre: genre || '',
