@@ -5,27 +5,60 @@ import Link from 'next/link'
 import {
   ArrowLeft,
   KeyRound,
+  Mail,
   MessageCircle,
   ShieldCheck,
   CheckCircle2,
-  HelpCircle,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react'
 
 export default function LupaPasswordPage() {
   const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // WhatsApp Admin number (consistent with site contacts)
+  // WhatsApp Admin number
   const adminWhatsApp = '6287880503974'
 
-  const handleWhatsAppRedirect = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setError(null)
+    setMessage(null)
+
+    if (!email.trim()) {
+      setError('Silakan masukkan email akun Anda.')
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const res = await fetch('/api/auth/lupa-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setMessage(data.message)
+      } else {
+        setError(data.error || 'Gagal mengirim email reset kata sandi.')
+      }
+    } catch {
+      setError('Terjadi gangguan jaringan. Silakan coba lagi atau hubungi via WhatsApp.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleWhatsAppRedirect = () => {
     const encodedMsg = encodeURIComponent(
-      `Halo Admin Sang Penjaga, saya lupa kata sandi akun saya.\n\nEmail akun: ${email.trim() || '[Belum diisi]'}\nMohon bantuannya untuk reset kata sandi sementara. Terima kasih!`
+      `Halo Admin Sang Penjaga, saya lupa kata sandi akun saya.\n\nEmail akun: ${email.trim() || '[Belum diisi]'}\nMohon bantuannya untuk reset kata sandi. Terima kasih!`
     )
-    const waUrl = `https://wa.me/${adminWhatsApp}?text=${encodedMsg}`
-    window.open(waUrl, '_blank')
+    window.open(`https://wa.me/${adminWhatsApp}?text=${encodedMsg}`, '_blank')
   }
 
   return (
@@ -55,18 +88,36 @@ export default function LupaPasswordPage() {
             Lupa Kata Sandi?
           </h1>
           <p className="text-sm text-gray-400 mt-1.5 leading-relaxed">
-            Ketik alamat email Anda di bawah untuk mendapatkan bantuan reset kata sandi langsung dari Admin kami.
+            Masukkan alamat email akun Anda. Kami akan mengirimkan tautan untuk mengatur ulang kata sandi.
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleWhatsAppRedirect} className="space-y-4">
+        {/* Status Alerts */}
+        {error && (
+          <div className="mb-4 p-3.5 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-sm text-red-400">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p className="leading-snug">{error}</p>
+          </div>
+        )}
+
+        {message && (
+          <div className="mb-5 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-400" />
+            <div>
+              <p className="font-semibold text-white mb-1">Tautan Terkirim!</p>
+              <p className="text-xs text-emerald-300 leading-relaxed">{message}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Email Form */}
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="email"
               className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5"
             >
-              Email Akun Anda
+              Email Akun
             </label>
             <input
               id="email"
@@ -82,53 +133,52 @@ export default function LupaPasswordPage() {
 
           <button
             type="submit"
-            className="w-full mt-2 bg-[#25D366] hover:bg-[#20ba59] text-white font-heading font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-md shadow-[#25D366]/20"
+            disabled={isLoading}
+            className="w-full mt-2 bg-gold hover:bg-gold-light text-black font-heading font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-gold/10"
           >
-            <MessageCircle className="w-4 h-4 fill-current" />
-            <span>Hubungi Admin via WhatsApp</span>
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Mengirim Email...</span>
+              </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4" />
+                <span>Kirim Tautan Reset ke Email</span>
+              </>
+            )}
           </button>
         </form>
 
-        {submitted && (
-          <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>
-              WhatsApp telah dibuka! Kirim pesan tersebut ke Admin, dan Admin akan memberikan kata sandi baru untuk akun Anda.
-            </p>
+        {/* Divider */}
+        <div className="relative my-6 text-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-dark-border" />
           </div>
-        )}
-
-        {/* Step Guide */}
-        <div className="mt-6 pt-6 border-t border-dark-border">
-          <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <HelpCircle className="w-3.5 h-3.5 text-gold" />
-            Cara Kerja Pemulihan Akun
-          </h4>
-          <ol className="text-xs text-gray-400 space-y-2 list-decimal list-inside leading-relaxed">
-            <li>
-              Masukkan email Anda dan klik tombol WhatsApp.
-            </li>
-            <li>
-              Kirim pesan verifikasi otomatis yang telah disiapkan ke Admin.
-            </li>
-            <li>
-              Admin akan mereset kata sandi sementara untuk akun Anda.
-            </li>
-            <li>
-              Masuk dengan kata sandi sementara, lalu ganti dengan sandi baru di menu profil.
-            </li>
-          </ol>
+          <span className="relative bg-dark-card px-3 text-xs text-gray-500 uppercase tracking-wider">
+            atau bantuan cepat
+          </span>
         </div>
 
+        {/* WhatsApp Option */}
+        <button
+          type="button"
+          onClick={handleWhatsAppRedirect}
+          className="w-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] font-heading font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+        >
+          <MessageCircle className="w-4 h-4 fill-current" />
+          <span>Hubungi Admin via WhatsApp</span>
+        </button>
+
         {/* Security Note */}
-        <div className="mt-4 p-3 rounded-lg bg-gold/5 border border-gold/15 flex items-center gap-2 text-xs text-gray-400">
+        <div className="mt-5 p-3 rounded-lg bg-gold/5 border border-gold/15 flex items-center gap-2 text-xs text-gray-400">
           <ShieldCheck className="w-4 h-4 text-gold flex-shrink-0" />
-          <span>Privasi dan data akun Anda dijamin aman.</span>
+          <span>Data akun dan privasi Anda terenkripsi dengan aman.</span>
         </div>
 
         {/* Footer Link */}
         <p className="mt-6 text-center text-xs text-gray-400">
-          Ingat kata sandi Anda?{' '}
+          Sudah ingat kata sandi Anda?{' '}
           <Link
             href="/login"
             className="text-gold hover:text-gold-light font-medium transition-colors hover:underline"

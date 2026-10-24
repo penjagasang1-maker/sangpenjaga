@@ -12,7 +12,7 @@ if (!dbUrl.includes('@') || !dbUrl.includes('tidbcloud.com')) {
   dbUrl = VALID_DATABASE_URL
 }
 
-const client = connect({ url: dbUrl })
+export const client = connect({ url: dbUrl })
 export const db = drizzle(client, { schema })
 
 export type Database = typeof db

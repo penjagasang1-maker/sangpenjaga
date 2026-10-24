@@ -14,6 +14,7 @@ IPAYMU_API_KEY = "C87B938F-D71D-4F32-9B56-B71ED7D02F25"
 IPAYMU_IS_PRODUCTION = "true"
 R2_BUCKET_NAME = "sang-penjaga"
 R2_PUBLIC_DOMAIN = "https://cdn.sangpenjaga.com"
+EMAIL_FROM = "Sang Penjaga <noreply@sangpenjaga.com>"
 
 [[r2_buckets]]
 binding = "R2_BUCKET"
