@@ -16,6 +16,7 @@ import {
 const navLinks = [
   { name: 'Beranda', href: '/' },
   { name: 'Komik', href: '/komik' },
+  { name: 'VIP Langganan', href: '/langganan' },
   { name: 'Tentang', href: '/tentang' },
 ]
 

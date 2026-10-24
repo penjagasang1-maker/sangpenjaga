@@ -1,9 +1,10 @@
 import { db } from '@/lib/db'
-import { payments, chapterPurchases, subscriptions, subscriptionPlans } from '@/lib/schema'
+import { payments, subscriptionPlans } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
-import { createTransaction, verifySignature } from '@/lib/midtrans'
+import { createXenditInvoice } from '@/lib/xendit'
 import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+
 export const runtime = 'edge'
 
 export async function POST(request: Request) {
@@ -12,44 +13,72 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Harus login terlebih dahulu' },
+        { error: 'Harus login terlebih dahulu untuk berlangganan' },
         { status: 401 }
       )
     }
 
-    const { type, chapterId, planId, amount } = await request.json()
+    const body = await request.json()
+    const { planId, type = 'subscription' } = body
 
-    if (!type || !amount) {
-      return NextResponse.json(
-        { error: 'Data pembayaran tidak lengkap' },
-        { status: 400 }
-      )
+    let planName = 'Langganan VIP Bulanan'
+    let planPrice = 1000
+    let planDays = 30
+
+    // Check plan from database if planId provided
+    if (planId) {
+      const [dbPlan] = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.id, Number(planId)))
+        .limit(1)
+
+      if (dbPlan) {
+        planName = `Langganan VIP ${dbPlan.name}`
+        planPrice = dbPlan.price
+        planDays = dbPlan.durationDays
+      } else if (Number(planId) === 2) {
+        planName = 'Langganan VIP Tahunan'
+        planPrice = 10000
+        planDays = 365
+      }
     }
 
-    const orderId = `SP-${type.toUpperCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const orderId = `SP-SUBS-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
-    // Create Midtrans transaction
-    const { token, redirectUrl } = await createTransaction({
+    // Create Xendit Invoice
+    const invoice = await createXenditInvoice({
       orderId,
-      amount,
-      customerName: user.username,
+      amount: planPrice,
+      description: `${planName} - Akses Penuh Semua Episode VIP Sang Penjaga (${planDays} Hari)`,
       customerEmail: user.email,
+      customerName: user.username,
     })
 
     // Save payment record
     await db.insert(payments).values({
       userId: user.id,
-      midtransOrderId: orderId,
-      amount,
-      type: type as 'chapter' | 'subscription',
+      midtransOrderId: orderId, // using orderId column
+      amount: planPrice,
+      type: 'subscription',
       status: 'pending',
+      midtransResponse: {
+        xenditInvoiceId: invoice.invoiceId,
+        planId: planId || 1,
+        planDays,
+      },
     })
 
-    return NextResponse.json({ token, redirectUrl, orderId })
-  } catch (error) {
+    return NextResponse.json({
+      success: true,
+      orderId,
+      invoiceUrl: invoice.invoiceUrl,
+      invoiceId: invoice.invoiceId,
+    })
+  } catch (error: any) {
     console.error('Create payment error:', error)
     return NextResponse.json(
-      { error: 'Gagal membuat transaksi' },
+      { error: error.message || 'Gagal membuat transaksi pembayaran Xendit' },
       { status: 500 }
     )
   }
