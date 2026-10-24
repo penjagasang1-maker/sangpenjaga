@@ -61,9 +61,13 @@ export async function createIpaymuTransaction(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sangpenjaga.com'
 
   const payload = {
-    name: params.customerName || 'Pembaca',
+    name: params.customerName || 'Pembaca Sang Penjaga',
     phone: params.customerPhone || '087880503974',
     email: params.customerEmail,
+    buyerName: params.customerName || 'Pembaca Sang Penjaga',
+    buyerPhone: params.customerPhone || '087880503974',
+    buyerEmail: params.customerEmail,
+    paymentMethod: 'qris',
     amount: Math.round(params.amount),
     comments: params.description,
     notifyUrl: `${appUrl}/api/payment/webhook`,
