@@ -1,5 +1,5 @@
 import { validateRequest } from '@/lib/auth'
-import { uploadToCloudinary } from '@/lib/cloudinary'
+import { uploadImage } from '@/lib/r2'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
@@ -26,18 +26,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const result = await uploadToCloudinary(file, folder)
+    const result = await uploadImage(file, folder)
 
     return NextResponse.json({
       url: result.url,
       publicId: result.publicId,
       width: result.width,
       height: result.height,
+      storage: result.storage,
     })
   } catch (error) {
     console.error('Upload error:', error)
     return NextResponse.json(
-      { error: (error as Error)?.message || 'Gagal mengunggah file ke Cloudinary' },
+      { error: (error as Error)?.message || 'Gagal mengunggah file gambar' },
       { status: 500 }
     )
   }
