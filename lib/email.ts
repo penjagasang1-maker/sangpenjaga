@@ -12,7 +12,7 @@ export async function sendEmail({
   const apiKey =
     process.env.RESEND_API_KEY ||
     (typeof atob !== 'undefined'
-      ? atob('cmVfMjlPSlZ0NlRfUGZxeEJCQmdncnQ1RXBEbjlyWTdqUGtM')
+      ? atob('cmVfMjlQSlZ0NlRfUGZxeEJCQmdncnQ1RXBEbjlyWTdqUGtM')
       : '')
   const fromEmail =
     process.env.EMAIL_FROM || 'Sang Penjaga <noreply@sangpenjaga.com>'

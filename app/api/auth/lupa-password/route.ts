@@ -125,7 +125,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            'Gagal mengirim email reset. Pastikan domain email sudah terverifikasi di Resend, atau hubungi Admin via WhatsApp.',
+            sendResult.error ||
+            'Gagal mengirim email reset. Silakan coba beberapa saat lagi atau hubungi Admin via WhatsApp.',
         },
         { status: 500 }
       )
