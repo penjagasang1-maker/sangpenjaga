@@ -239,7 +239,7 @@ export default function LanggananPage() {
         <div className="mt-16 text-center max-w-xl mx-auto border-t border-dark-border pt-8">
           <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-3">
             <ShieldCheck className="w-4 h-4 text-green-400" />
-            Pembayaran Aman Didukung oleh <span className="text-white font-semibold">Xendit Gateway</span>
+            Pembayaran Aman Didukung oleh <span className="text-white font-semibold">iPaymu Gateway</span>
           </div>
           <p className="text-[11px] text-gray-500">
             Mendukung QRIS (GoPay, OVO, Dana, ShopeePay), Transfer Bank Virtual Account (BCA, BRI, BNI, Mandiri), dan gerai retail.

@@ -19,7 +19,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Koin & Langganan',
     question: 'Bagaimana cara membeli koin atau langganan VIP di Sang Penjaga?',
-    answer: 'Buka menu VIP Langganan di navigasi atas, pilih paket yang Anda inginkan (Bulanan atau Tahunan), lalu klik tombol bayar. Anda akan diarahkan ke gerbang pembayaran aman Xendit untuk menyelesaikan pembayaran via QRIS (GoPay, OVO, Dana, ShopeePay), Transfer Bank (Virtual Account), atau retail.'
+    answer: 'Buka menu VIP Langganan di navigasi atas, pilih paket yang Anda inginkan (Bulanan atau Tahunan), lalu klik tombol bayar. Anda akan diarahkan ke gerbang pembayaran aman iPaymu untuk menyelesaikan pembayaran via QRIS (GoPay, OVO, Dana, ShopeePay), Transfer Bank (Virtual Account), atau retail.'
   },
   {
     category: 'Koin & Langganan',

@@ -62,7 +62,7 @@ export default function TermsAndConditionsPage() {
               <ul className="list-disc list-inside space-y-1.5 text-gray-400 pl-2">
                 <li><strong>Koin Premium:</strong> Merupakan mata uang virtual resmi platform yang dapat dibeli untuk membuka chapter komik pilihan. Koin yang telah berhasil dibeli tidak dapat ditukarkan kembali menjadi uang tunai (fiat money).</li>
                 <li><strong>Paket Langganan VIP:</strong> Paket berlangganan berbasis periode waktu (Bulanan / Tahunan) yang memberikan akses tak terbatas ke seluruh episode berbayar selama masa langganan aktif.</li>
-                <li>Pembelian koin maupun paket langganan diproses secara instan melalui gerbang pembayaran resmi berizin (Xendit Gateway).</li>
+                <li>Pembelian koin maupun paket langganan diproses secara instan melalui gerbang pembayaran resmi berizin (iPaymu Gateway).</li>
               </ul>
             </section>
 
@@ -84,7 +84,7 @@ export default function TermsAndConditionsPage() {
             <section>
               <h2 className="text-base font-semibold text-white mb-2">5. Transaksi dan Gerbang Pembayaran</h2>
               <p>
-                Seluruh pembayaran di platform diproses melalui rekanan gerbang pembayaran berlisensi Bank Indonesia (Xendit). Pengguna wajib memastikan nominal dan metode pembayaran yang dipilih (QRIS, Transfer Virtual Account, atau E-Wallet) sesuai dengan instruksi tagihan resmi. Platform tidak bertanggung jawab atas kelalaian pengguna dalam mentransfer ke rekening di luar instruksi sistem kami.
+                Seluruh pembayaran di platform diproses melalui rekanan gerbang pembayaran berlisensi Bank Indonesia (iPaymu). Pengguna wajib memastikan nominal dan metode pembayaran yang dipilih (QRIS, Transfer Virtual Account, atau E-Wallet) sesuai dengan instruksi tagihan resmi. Platform tidak bertanggung jawab atas kelalaian pengguna dalam mentransfer ke rekening di luar instruksi sistem kami.
               </p>
             </section>
 

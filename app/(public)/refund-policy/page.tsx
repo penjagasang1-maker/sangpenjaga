@@ -61,7 +61,7 @@ export default function RefundPolicyPage() {
               </p>
               <ul className="list-disc list-inside space-y-1.5 text-gray-400 pl-2">
                 <li><strong>Duplikasi Pembayaran:</strong> Terjadi pemotongan ganda atau lebih untuk satu nomor tagihan / invoice yang sama akibat gangguan jaringan gateway.</li>
-                <li><strong>Kegagalan Pengiriman Produk:</strong> Saldo koin atau status VIP tidak bertambah di akun pengguna dalam 1x24 jam setelah pembayaran dinyatakan berhasil oleh Xendit dan tim teknis tidak dapat mengaktifkannya secara manual.</li>
+                <li><strong>Kegagalan Pengiriman Produk:</strong> Saldo koin atau status VIP tidak bertambah di akun pengguna dalam 1x24 jam setelah pembayaran dinyatakan berhasil oleh iPaymu dan tim teknis tidak dapat mengaktifkannya secara manual.</li>
                 <li><strong>Gangguan Teknis Permanen:</strong> Platform mengalami kendala teknis fatal yang menyebabkan konten yang telah dibeli tidak dapat diakses sama sekali selama lebih dari 7 (tujuh) hari berturut-turut.</li>
               </ul>
             </section>
@@ -73,7 +73,7 @@ export default function RefundPolicyPage() {
               </p>
               <ol className="list-decimal list-inside space-y-1.5 text-gray-400 pl-2">
                 <li>Hubungi layanan pelanggan kami melalui email <a href="mailto:mrizqi045@gmail.com" className="text-gold hover:underline">mrizqi045@gmail.com</a> atau WhatsApp di <strong>087880503974</strong>.</li>
-                <li>Sertakan bukti transaksi resmi (Invoice ID Xendit / Bukti Notifikasi Bank).</li>
+                <li>Sertakan bukti transaksi resmi (ID Transaksi / Bukti Pembayaran iPaymu).</li>
                 <li>Sertakan alamat email akun Sang Penjaga Anda dan penjelasan singkat kendala yang terjadi.</li>
               </ol>
             </section>

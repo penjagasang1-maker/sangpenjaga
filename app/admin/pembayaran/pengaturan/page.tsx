@@ -1,16 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Key, AlertTriangle, Loader2, Check, Copy, ExternalLink, ShieldCheck } from 'lucide-react'
-import { formatRupiah } from '@/lib/utils'
+import { Save, Key, AlertTriangle, Loader2, Check, Copy, ExternalLink, ShieldCheck, CreditCard } from 'lucide-react'
 
 export default function PengaturanPembayaranPage() {
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [xenditConfig, setXenditConfig] = useState({
-    isProduction: false,
-    secretKey: '',
-    webhookToken: '',
+  const [ipaymuConfig, setIpaymuConfig] = useState({
+    isProduction: true,
+    va: '',
+    apiKey: '',
   })
 
   const [plans, setPlans] = useState([
@@ -28,10 +27,9 @@ export default function PengaturanPembayaranPage() {
 
   const handleSave = async () => {
     setSaving(true)
-    // Feedback saved
     setTimeout(() => {
       setSaving(false)
-      alert('Pengaturan tersimpan. Catatan: Kunci API rahasia Xendit harus didaftarkan di wrangler.toml atau Cloudflare Pages Environment Variables.')
+      alert('Pengaturan tersimpan. Pastikan variabel IPAYMU_VA dan IPAYMU_API_KEY juga telah didaftarkan di wrangler.toml atau Cloudflare Pages.')
     }, 700)
   }
 
@@ -40,37 +38,37 @@ export default function PengaturanPembayaranPage() {
       <div className="mb-6">
         <h1 className="font-heading text-2xl font-bold text-white">Pengaturan Pembayaran &amp; Langganan</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Konfigurasi payment gateway Xendit dan tarif paket langganan VIP
+          Konfigurasi payment gateway iPaymu dan tarif paket langganan VIP
         </p>
       </div>
 
-      {/* Xendit Config */}
+      {/* iPaymu Config */}
       <div className="mb-8 rounded-xl border border-dark-border bg-dark-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-gold" />
+            <CreditCard className="h-5 w-5 text-gold" />
             <h2 className="font-heading text-lg font-semibold text-white">
-              Konfigurasi Xendit Payment Gateway
+              Konfigurasi iPaymu Gateway
             </h2>
           </div>
           <a
-            href="https://dashboard.xendit.co"
+            href="https://my.ipaymu.com"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-gold hover:underline"
           >
-            Dashboard Xendit <ExternalLink className="h-3 w-3" />
+            Dashboard iPaymu <ExternalLink className="h-3 w-3" />
           </a>
         </div>
 
-        <div className="mb-6 flex items-start gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
-          <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400" />
-          <div className="text-xs text-blue-200">
-            <p className="font-semibold mb-1">Cara Setup Xendit:</p>
-            <ol className="list-decimal list-inside space-y-0.5 text-blue-300/90">
-              <li>Buka Xendit Dashboard &gt; Settings &gt; API Keys &gt; Secret Key.</li>
-              <li>Buka Settings &gt; Callbacks &gt; Invoices (Paid, Expired).</li>
-              <li>Tempel URL Webhook Callback di bawah ke Xendit Callback URL.</li>
+        <div className="mb-6 flex items-start gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
+          <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-400" />
+          <div className="text-xs text-yellow-200">
+            <p className="font-semibold mb-1">Panduan Pengaturan iPaymu:</p>
+            <ol className="list-decimal list-inside space-y-0.5 text-yellow-300/90">
+              <li>Buka dashboard iPaymu di <strong>my.ipaymu.com</strong> (Production) atau <strong>sandbox.ipaymu.com</strong> (Testing).</li>
+              <li>Salin <strong>Virtual Account (VA)</strong> dan <strong>API Key</strong> dari menu Integrasi / API.</li>
+              <li>Daftarkan URL Webhook Callback di bawah ke iPaymu Notify URL.</li>
             </ol>
           </div>
         </div>
@@ -79,7 +77,7 @@ export default function PengaturanPembayaranPage() {
           {/* Webhook Callback URL display */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-300">
-              URL Webhook Callback (Masukkan di Dashboard Xendit):
+              URL Notify / Webhook Callback (Masukkan di Dashboard iPaymu):
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -103,43 +101,43 @@ export default function PengaturanPembayaranPage() {
             <label className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
-                checked={xenditConfig.isProduction}
-                onChange={(e) => setXenditConfig(prev => ({ ...prev, isProduction: e.target.checked }))}
+                checked={ipaymuConfig.isProduction}
+                onChange={(e) => setIpaymuConfig(prev => ({ ...prev, isProduction: e.target.checked }))}
                 className="h-4 w-4 rounded border-dark-border accent-gold"
               />
               <span className="text-sm text-gray-300">Production Mode (Live)</span>
             </label>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              xenditConfig.isProduction
+              ipaymuConfig.isProduction
                 ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                 : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
             }`}>
-              {xenditConfig.isProduction ? 'LIVE PRODUCTION' : 'TESTING (DEVELOPMENT)'}
+              {ipaymuConfig.isProduction ? 'LIVE PRODUCTION (my.ipaymu.com)' : 'SANDBOX TESTING (sandbox.ipaymu.com)'}
             </span>
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-300">
-              Xendit Secret API Key (<code className="text-xs text-gold">XENDIT_SECRET_KEY</code>)
+              Nomor Virtual Account iPaymu (<code className="text-xs text-gold">IPAYMU_VA</code>)
             </label>
             <input
-              type="password"
-              value={xenditConfig.secretKey}
-              onChange={(e) => setXenditConfig(prev => ({ ...prev, secretKey: e.target.value }))}
-              placeholder="xnd_development_... atau xnd_production_..."
+              type="text"
+              value={ipaymuConfig.va}
+              onChange={(e) => setIpaymuConfig(prev => ({ ...prev, va: e.target.value }))}
+              placeholder="Contoh: 117900xxxxxxxxxx"
               className="w-full rounded-lg border border-dark-border bg-dark px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-300">
-              Webhook Verification Token (<code className="text-xs text-gold">XENDIT_WEBHOOK_VERIFICATION_TOKEN</code>)
+              API Key Rahasia iPaymu (<code className="text-xs text-gold">IPAYMU_API_KEY</code>)
             </label>
             <input
               type="password"
-              value={xenditConfig.webhookToken}
-              onChange={(e) => setXenditConfig(prev => ({ ...prev, webhookToken: e.target.value }))}
-              placeholder="Token verifikasi callback Xendit (opsional)"
+              value={ipaymuConfig.apiKey}
+              onChange={(e) => setIpaymuConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+              placeholder="Contoh: QbGzEpK_xxxxxxxxxxxxxx"
               className="w-full rounded-lg border border-dark-border bg-dark px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>

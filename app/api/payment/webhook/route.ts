@@ -1,41 +1,63 @@
 import { db } from '@/lib/db'
 import { payments, subscriptions, subscriptionPlans } from '@/lib/schema'
-import { verifyXenditWebhookToken } from '@/lib/xendit'
-import { eq, and, gt } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
 
 export async function POST(request: Request) {
   try {
-    const callbackToken = request.headers.get('x-callback-token')
+    let body: Record<string, any> = {}
+    const contentType = request.headers.get('content-type') || ''
 
-    if (!verifyXenditWebhookToken(callbackToken)) {
-      console.error('Invalid Xendit callback token')
-      return NextResponse.json(
-        { error: 'Unauthorized callback token' },
-        { status: 401 }
-      )
+    if (contentType.includes('application/json')) {
+      body = await request.json().catch(() => ({}))
+    } else {
+      try {
+        const formData = await request.formData()
+        for (const [key, value] of formData.entries()) {
+          body[key] = value
+        }
+      } catch {
+        const text = await request.text()
+        const params = new URLSearchParams(text)
+        params.forEach((val, key) => {
+          body[key] = val
+        })
+      }
     }
 
-    const body = await request.json()
-    const { external_id, status } = body
+    const referenceId =
+      body.reference_id ||
+      body.referenceId ||
+      body.trx_id ||
+      body.external_id ||
+      body.order_id
 
-    if (!external_id) {
+    const rawStatus = (body.status || '').toLowerCase()
+    const statusCode = String(body.status_code || '')
+
+    if (!referenceId) {
+      console.warn('Webhook iPaymu: reference_id tidak ditemukan', body)
       return NextResponse.json(
-        { error: 'Missing external_id' },
+        { error: 'Missing reference_id' },
         { status: 400 }
       )
     }
 
-    // Determine payment status from Xendit status
+    // Determine payment status (iPaymu sends status: 'berhasil' or status_code: '1')
     let paymentStatus: 'success' | 'failed' | 'pending' | 'expired' = 'pending'
 
-    if (status === 'PAID' || status === 'SETTLED') {
+    if (
+      rawStatus === 'berhasil' ||
+      rawStatus === 'success' ||
+      rawStatus === 'paid' ||
+      statusCode === '1'
+    ) {
       paymentStatus = 'success'
-    } else if (status === 'EXPIRED') {
+    } else if (rawStatus === 'expired') {
       paymentStatus = 'expired'
-    } else if (status === 'FAILED') {
+    } else if (rawStatus === 'gagal' || rawStatus === 'failed' || statusCode === '-1') {
       paymentStatus = 'failed'
     }
 
@@ -43,11 +65,11 @@ export async function POST(request: Request) {
     const [payment] = await db
       .select()
       .from(payments)
-      .where(eq(payments.midtransOrderId, external_id))
+      .where(eq(payments.midtransOrderId, referenceId))
       .limit(1)
 
     if (!payment) {
-      console.warn(`Payment not found for external_id: ${external_id}`)
+      console.warn(`Payment not found for referenceId: ${referenceId}`)
       return NextResponse.json({ status: 'not_found' }, { status: 404 })
     }
 
@@ -58,7 +80,7 @@ export async function POST(request: Request) {
         status: paymentStatus,
         midtransResponse: body,
       })
-      .where(eq(payments.midtransOrderId, external_id))
+      .where(eq(payments.midtransOrderId, referenceId))
 
     // If payment succeeded, activate or extend subscription
     if (paymentStatus === 'success' && payment.userId) {
@@ -106,12 +128,12 @@ export async function POST(request: Request) {
         })
       }
 
-      console.log(`User ${payment.userId} subscribed successfully for ${planDays} days`)
+      console.log(`User ${payment.userId} subscribed successfully via iPaymu for ${planDays} days`)
     }
 
-    return NextResponse.json({ status: 'ok' })
+    return NextResponse.json({ status: 'ok', referenceId, paymentStatus })
   } catch (error) {
-    console.error('Xendit webhook error:', error)
+    console.error('iPaymu webhook error:', error)
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }

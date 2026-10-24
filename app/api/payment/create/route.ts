@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { payments, subscriptionPlans } from '@/lib/schema'
 import { validateRequest } from '@/lib/auth'
-import { createXenditInvoice } from '@/lib/xendit'
+import { createIpaymuTransaction } from '@/lib/ipaymu'
 import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
@@ -44,13 +44,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const orderId = `SP-SUBS-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const orderId = `SP-VIP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
-    // Create Xendit Invoice
-    const invoice = await createXenditInvoice({
+    // Create iPaymu transaction
+    const ipaymuResult = await createIpaymuTransaction({
       orderId,
       amount: planPrice,
-      description: `${planName} - Akses Penuh Semua Episode VIP Sang Penjaga (${planDays} Hari)`,
+      description: `${planName} Sang Penjaga (${planDays} Hari)`,
       customerEmail: user.email,
       customerName: user.username,
     })
@@ -58,12 +58,14 @@ export async function POST(request: Request) {
     // Save payment record
     await db.insert(payments).values({
       userId: user.id,
-      midtransOrderId: orderId, // using orderId column
+      midtransOrderId: orderId,
       amount: planPrice,
       type: 'subscription',
       status: 'pending',
       midtransResponse: {
-        xenditInvoiceId: invoice.invoiceId,
+        gateway: 'ipaymu',
+        sessionId: ipaymuResult.sessionId,
+        transactionId: ipaymuResult.transactionId,
         planId: planId || 1,
         planDays,
       },
@@ -72,13 +74,13 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       orderId,
-      invoiceUrl: invoice.invoiceUrl,
-      invoiceId: invoice.invoiceId,
+      invoiceUrl: ipaymuResult.paymentUrl,
+      sessionId: ipaymuResult.sessionId,
     })
   } catch (error: any) {
     console.error('Create payment error:', error)
     return NextResponse.json(
-      { error: error.message || 'Gagal membuat transaksi pembayaran Xendit' },
+      { error: error.message || 'Gagal membuat transaksi pembayaran iPaymu' },
       { status: 500 }
     )
   }

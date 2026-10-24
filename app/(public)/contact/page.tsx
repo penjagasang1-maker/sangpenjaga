@@ -212,7 +212,7 @@ export default function ContactPage() {
                     required
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Tuliskan nomor invoice Xendit (jika ada), judul komik, dan rincian kendala..."
+                    placeholder="Tuliskan nomor referensi / transaksi iPaymu (jika ada), judul komik, dan rincian kendala..."
                     className="w-full rounded-xl border border-dark-border bg-dark px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-gold focus:outline-none"
                   />
                 </div>
