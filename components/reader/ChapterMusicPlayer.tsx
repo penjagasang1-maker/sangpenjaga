@@ -1,7 +1,14 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Music, Volume2, VolumeX, Play, Pause, Disc3, Sparkles, X } from 'lucide-react'
+import { Volume2, VolumeX, Play, Pause, Disc3 } from 'lucide-react'
+
+declare global {
+  interface Window {
+    YT: any
+    onYouTubeIframeAPIReady: any
+  }
+}
 
 interface ChapterMusicPlayerProps {
   musicUrl?: string | null
@@ -10,75 +17,165 @@ interface ChapterMusicPlayerProps {
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null
+  const trimmed = url.trim()
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed
+  }
   const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|watch|shorts)\/|.*[?&]v=)|youtu\.be\/|music\.youtube\.com\/watch\?v=)([^"&?\/\s]{11})/
-  const match = url.match(regExp)
+  const match = trimmed.match(regExp)
   return match ? match[1] : null
 }
 
 export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps) {
   const videoId = musicUrl ? extractYouTubeId(musicUrl) : null
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const playerRef = useRef<any>(null)
+  const isReadyRef = useRef(false)
+  const hasTriggeredRef = useRef(false)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
-  const [isDismissed, setIsDismissed] = useState(false)
-  const [showToast, setShowToast] = useState(false)
-  const [origin, setOrigin] = useState('https://sangpenjaga.com')
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setOrigin(window.location.origin)
-    }
-  }, [])
-
-  // Send command to YouTube iframe via postMessage
-  const sendCommand = (func: string, args: any = '') => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        JSON.stringify({ event: 'command', func, args }),
-        '*'
-      )
-    }
-  }
-
+  // Start video playback
   const startPlaying = () => {
-    sendCommand('unMute')
-    sendCommand('setVolume', 70)
-    sendCommand('playVideo')
-    setIsPlaying(true)
-    setIsMuted(false)
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 3500)
+    hasTriggeredRef.current = true
+    if (playerRef.current && isReadyRef.current) {
+      try {
+        playerRef.current.unMute()
+        playerRef.current.setVolume(75)
+        playerRef.current.playVideo()
+        setIsPlaying(true)
+        setIsMuted(false)
+      } catch (err) {
+        console.warn('Play video failed:', err)
+      }
+    }
   }
 
-  // Attempt first user tap/click on page to start music if not yet playing
+  // Initialize YouTube IFrame Player
   useEffect(() => {
     if (!videoId) return
 
-    const handleFirstClick = (e: MouseEvent | TouchEvent) => {
-      // Don't auto-trigger if user tapped close or links
-      const target = e.target as HTMLElement
-      if (target?.closest('button') || target?.closest('a') || target?.closest('input')) {
-        return
+    let isMounted = true
+
+    const createPlayer = () => {
+      if (!window.YT || !window.YT.Player) return
+      if (playerRef.current) return
+
+      try {
+        playerRef.current = new window.YT.Player('yt-bgm-element', {
+          videoId,
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            loop: 1,
+            playlist: videoId,
+            playsinline: 1,
+            disablekb: 1,
+            fs: 0,
+            origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+          },
+          events: {
+            onReady: (event: any) => {
+              if (!isMounted) return
+              isReadyRef.current = true
+              // If user already scrolled or touched while loading, play immediately
+              if (hasTriggeredRef.current) {
+                try {
+                  event.target.unMute()
+                  event.target.setVolume(75)
+                  event.target.playVideo()
+                  setIsPlaying(true)
+                } catch (e) {
+                  console.warn(e)
+                }
+              }
+            },
+            onStateChange: (event: any) => {
+              if (!isMounted) return
+              // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+              if (event.data === 1) {
+                setIsPlaying(true)
+              } else if (event.data === 2) {
+                setIsPlaying(false)
+              } else if (event.data === 0) {
+                // Loop
+                try {
+                  event.target.playVideo()
+                } catch {}
+              }
+            },
+            onError: (event: any) => {
+              console.warn('YouTube BGM Player error:', event.data)
+            },
+          },
+        })
+      } catch (err) {
+        console.warn('Error creating YT player:', err)
       }
-      if (!isPlaying && !isDismissed) {
+    }
+
+    if (window.YT && window.YT.Player) {
+      createPlayer()
+    } else {
+      const prevCallback = window.onYouTubeIframeAPIReady
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCallback === 'function') prevCallback()
+        createPlayer()
+      }
+
+      if (!document.getElementById('yt-iframe-api-script')) {
+        const script = document.createElement('script')
+        script.id = 'yt-iframe-api-script'
+        script.src = 'https://www.youtube.com/iframe_api'
+        script.async = true
+        document.head.appendChild(script)
+      }
+    }
+
+    // Scroll & touch listeners to start music automatically
+    const handleScrollTrigger = () => {
+      if (!hasTriggeredRef.current) {
         startPlaying()
       }
     }
 
-    window.addEventListener('click', handleFirstClick, { passive: true })
+    window.addEventListener('scroll', handleScrollTrigger, { passive: true })
+    window.addEventListener('touchmove', handleScrollTrigger, { passive: true })
+    window.addEventListener('touchstart', handleScrollTrigger, { passive: true })
+    window.addEventListener('pointerdown', handleScrollTrigger, { passive: true })
+    window.addEventListener('wheel', handleScrollTrigger, { passive: true })
+
     return () => {
-      window.removeEventListener('click', handleFirstClick)
+      isMounted = false
+      window.removeEventListener('scroll', handleScrollTrigger)
+      window.removeEventListener('touchmove', handleScrollTrigger)
+      window.removeEventListener('touchstart', handleScrollTrigger)
+      window.removeEventListener('pointerdown', handleScrollTrigger)
+      window.removeEventListener('wheel', handleScrollTrigger)
+
+      if (playerRef.current && typeof playerRef.current.destroy === 'function') {
+        try {
+          playerRef.current.destroy()
+        } catch {}
+        playerRef.current = null
+      }
     }
-  }, [videoId, isPlaying, isDismissed])
+  }, [videoId])
 
   if (!videoId) return null
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!playerRef.current || !isReadyRef.current) {
+      startPlaying()
+      return
+    }
+
     if (isPlaying) {
-      sendCommand('pauseVideo')
-      setIsPlaying(false)
+      try {
+        playerRef.current.pauseVideo()
+        setIsPlaying(false)
+      } catch {}
     } else {
       startPlaying()
     }
@@ -86,81 +183,30 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!playerRef.current || !isReadyRef.current) return
+
     if (isMuted) {
-      sendCommand('unMute')
-      setIsMuted(false)
+      try {
+        playerRef.current.unMute()
+        setIsMuted(false)
+      } catch {}
     } else {
-      sendCommand('mute')
-      setIsMuted(true)
+      try {
+        playerRef.current.mute()
+        setIsMuted(true)
+      } catch {}
     }
   }
 
   return (
     <>
-      {/* Hidden YouTube IFrame with 1px size to avoid mobile background suspension */}
-      <iframe
-        ref={iframeRef}
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&autoplay=0&loop=1&playlist=${videoId}&origin=${origin}&controls=0&playsinline=1`}
-        title="Chapter Background Music"
-        className="fixed bottom-0 right-0 w-[1px] h-[1px] opacity-1 pointer-events-none z-[-1] overflow-hidden"
-        allow="autoplay; encrypted-media"
-      />
-
-      {/* Webtoon-style Prompt Banner (Mobile & Desktop) when music is not yet playing */}
-      {!isPlaying && !isDismissed && (
-        <aside
-          aria-label="Notifikasi musik chapter"
-          className="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[92vw] sm:max-w-md w-full px-3"
-        >
-          <div className="bg-dark/95 border border-gold/50 backdrop-blur-xl rounded-2xl p-3 sm:px-4 sm:py-3 shadow-2xl shadow-black flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom duration-500">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center text-gold flex-shrink-0 animate-pulse">
-                <Music className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">Musik Pengiring Bab</p>
-                <p className="text-[11px] text-gray-300 truncate">Ketuk tombol untuk memutar musik</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={startPlaying}
-                className="bg-gold hover:bg-gold-light active:scale-95 text-black text-xs font-bold px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-md shadow-gold/20"
-              >
-                <Play className="w-3.5 h-3.5 fill-black" />
-                <span>Putar</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsDismissed(true)}
-                className="p-1 text-gray-400 hover:text-white rounded-md"
-                aria-label="Tutup notifikasi musik"
-                title="Tutup"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </aside>
-      )}
-
-      {/* Autoplay Feedback Toast */}
-      {showToast && (
-        <aside
-          aria-label="Status musik latar"
-          className="fixed bottom-20 right-4 z-50 animate-bounce duration-1000 max-w-xs bg-dark-card/95 border border-gold/40 backdrop-blur-md rounded-xl p-3 shadow-2xl flex items-center gap-3 text-xs text-white"
-        >
-          <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center text-gold flex-shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="font-bold text-gold">Musik Latar Berjalan</p>
-            <p className="text-[11px] text-gray-300">Gunakan kontrol di pojok kanan bawah.</p>
-          </div>
-        </aside>
-      )}
+      {/* Active YouTube Container with minimal dimensions so mobile browsers don't suspend playback */}
+      <div
+        className="fixed bottom-0 right-0 w-8 h-8 pointer-events-none opacity-[0.01] overflow-hidden z-[-1]"
+        aria-hidden="true"
+      >
+        <div id="yt-bgm-element" />
+      </div>
 
       {/* Floating Mini Player Widget (Bottom-Right) */}
       <aside aria-label="Pemutar musik latar chapter" className="fixed bottom-5 right-5 z-40">
@@ -210,4 +256,3 @@ export default function ChapterMusicPlayer({ musicUrl }: ChapterMusicPlayerProps
     </>
   )
 }
-

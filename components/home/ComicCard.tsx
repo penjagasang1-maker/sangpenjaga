@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Image from 'next/image'
 
 export interface Comic {
   id: number | string
@@ -49,13 +48,26 @@ export default function ComicCard({
     >
       {/* Cover Image Container */}
       <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden bg-dark-card border border-dark-border group-hover:border-gold group-hover:shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all duration-300">
-        <Image
-          src={coverUrl}
-          alt={title}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              const target = e.currentTarget
+              if (!target.dataset.fallback && coverUrl.includes('cdn.sangpenjaga.com/')) {
+                target.dataset.fallback = 'true'
+                target.src = coverUrl.replace('https://cdn.sangpenjaga.com/', '/api/cdn/')
+              }
+            }}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-dark text-xs text-gray-500">
+            Tanpa Cover
+          </div>
+        )}
 
         {/* Badges on Cover */}
         <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
