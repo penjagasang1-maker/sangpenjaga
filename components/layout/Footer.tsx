@@ -57,18 +57,18 @@ export default function Footer() {
               </h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/bantuan" className="hover:text-gold transition-colors">
+                  <Link href="/contact" className="hover:text-gold transition-colors">
                     Pusat Bantuan
                   </Link>
                 </li>
                 <li>
-                  <Link href="/syarat-ketentuan" className="hover:text-gold transition-colors">
-                    Syarat &amp; Ketentuan
+                  <Link href="/faq" className="hover:text-gold transition-colors">
+                    Tanya Jawab (FAQ)
                   </Link>
                 </li>
                 <li>
-                  <Link href="/kebijakan-privasi" className="hover:text-gold transition-colors">
-                    Kebijakan Privasi
+                  <Link href="/terms-and-conditions" className="hover:text-gold transition-colors">
+                    Syarat &amp; Ketentuan
                   </Link>
                 </li>
                 <li>
