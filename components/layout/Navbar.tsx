@@ -131,15 +131,19 @@ export default function Navbar() {
                   </Link>
                 )}
 
-                {/* User Greeting */}
-                <div className="flex items-center gap-2 pl-2 border-l border-dark-border text-sm text-gray-300">
-                  <div className="w-7 h-7 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs">
+                {/* User Greeting -> Link to Profil & Password */}
+                <Link
+                  href="/profil"
+                  className="flex items-center gap-2 pl-2 border-l border-dark-border text-sm text-gray-300 hover:text-gold transition-colors group"
+                  title="Buka Profil & Ganti Kata Sandi"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs group-hover:scale-105 transition-transform border border-gold/30">
                     {currentUser.username[0]?.toUpperCase()}
                   </div>
-                  <span className="font-medium max-w-[120px] truncate">
+                  <span className="font-medium max-w-[120px] truncate group-hover:text-gold">
                     {currentUser.username}
                   </span>
-                </div>
+                </Link>
 
                 {/* Logout Button */}
                 <button
@@ -237,15 +241,19 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* User Profile Summary in Mobile Drawer */}
+          {/* User Profile Summary in Mobile Drawer -> Link to /profil */}
           {currentUser && (
-            <div className="mt-4 p-3 rounded-lg bg-dark border border-dark-border flex items-center justify-between">
+            <Link
+              href="/profil"
+              onClick={() => setIsOpen(false)}
+              className="mt-4 p-3 rounded-lg bg-dark border border-dark-border flex items-center justify-between hover:border-gold/50 transition-colors group"
+            >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs">
+                <div className="w-8 h-8 rounded-full bg-gold/20 text-gold font-bold flex items-center justify-center text-xs border border-gold/30">
                   {currentUser.username[0]?.toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white truncate max-w-[120px]">
+                  <p className="text-xs font-semibold text-white truncate max-w-[120px] group-hover:text-gold transition-colors">
                     {currentUser.username}
                   </p>
                   <span className="text-[10px] text-gold uppercase font-bold">
@@ -253,7 +261,10 @@ export default function Navbar() {
                   </span>
                 </div>
               </div>
-            </div>
+              <span className="text-[11px] text-gray-400 group-hover:text-gold transition-colors">
+                Profil & Sandi &rarr;
+              </span>
+            </Link>
           )}
 
           {/* Drawer Navigation Links */}
