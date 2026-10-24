@@ -164,7 +164,7 @@ export default function AdminBannerPage() {
       </div>
 
       <p className="text-xs text-gray-400 bg-dark-card border border-dark-border p-3 rounded-lg">
-        Rekomendasi rasio banner: <span className="text-gold font-medium">1455 x 650 px</span>. Gambar akan otomatis di-hosting ke Cloudinary CDN.
+        Rekomendasi rasio banner: <span className="text-gold font-medium">1455 x 650 px</span>. Gambar otomatis dikompresi dan di-hosting ke Cloudflare R2 CDN.
       </p>
 
       {/* Alert Notification */}

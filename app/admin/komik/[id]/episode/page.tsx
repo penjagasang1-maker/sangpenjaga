@@ -288,7 +288,7 @@ export default function AdminEpisodePage() {
               Upload Lembaran Episode Baru
             </h2>
             <p className="text-xs text-gray-400 mt-1">
-              File gambar akan otomatis dikompresi agar hemat kuota Cloudinary dan cepat dibaca di HP
+              File gambar otomatis dikompresi dan di-hosting ke Cloudflare R2 CDN agar cepat dibaca di HP
             </p>
           </div>
 
@@ -457,7 +457,7 @@ export default function AdminEpisodePage() {
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Mengompres & Mengunggah Lembaran ke Cloudinary...
+                    Mengompres & Mengunggah Lembaran ke Cloudflare R2...
                   </span>
                   <span>
                     Lembar {uploadProgress.current} dari {uploadProgress.total}
