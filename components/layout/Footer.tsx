@@ -57,7 +57,7 @@ export default function Footer() {
               </h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/contact" className="hover:text-gold transition-colors">
+                  <Link href="/kontak" className="hover:text-gold transition-colors">
                     Pusat Bantuan
                   </Link>
                 </li>
@@ -67,7 +67,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms-and-conditions" className="hover:text-gold transition-colors">
+                  <Link href="/terms" className="hover:text-gold transition-colors">
                     Syarat &amp; Ketentuan
                   </Link>
                 </li>
