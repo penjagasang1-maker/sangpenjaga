@@ -38,13 +38,19 @@ async function hmacSha256(message: string, secret: string): Promise<string> {
 export async function createIpaymuTransaction(
   params: CreateIpaymuTransactionParams
 ): Promise<CreateIpaymuTransactionResult> {
-  const va = process.env.IPAYMU_VA
-  const apiKey = process.env.IPAYMU_API_KEY
-  const isProduction = process.env.IPAYMU_IS_PRODUCTION === 'true'
+  let cfEnv: any = null
+  try {
+    const { getRequestContext } = await import('@cloudflare/next-on-pages')
+    cfEnv = getRequestContext()?.env
+  } catch {}
+
+  const va = cfEnv?.IPAYMU_VA || process.env.IPAYMU_VA
+  const apiKey = cfEnv?.IPAYMU_API_KEY || process.env.IPAYMU_API_KEY
+  const isProduction = (cfEnv?.IPAYMU_IS_PRODUCTION || process.env.IPAYMU_IS_PRODUCTION) !== 'false'
 
   if (!va || !apiKey) {
     throw new Error(
-      'Kredensial iPaymu belum dikonfigurasi. Mohon isi IPAYMU_VA dan IPAYMU_API_KEY.'
+      'Kredensial iPaymu belum dikonfigurasi. Mohon isi IPAYMU_VA dan IPAYMU_API_KEY di Environment Variables Cloudflare Pages.'
     )
   }
 
