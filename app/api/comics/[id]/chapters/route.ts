@@ -85,16 +85,6 @@ export async function POST(
       )
     }
 
-    if (!pageImages || !Array.isArray(pageImages) || pageImages.length === 0) {
-      return NextResponse.json(
-        { error: 'Minimal harus ada 1 lembar gambar komik yang diunggah' },
-        { status: 400 }
-      )
-    }
-
-    // Ensure music_url column exists in TiDB
-    await db.execute(sql`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS music_url VARCHAR(500);`).catch(() => {})
-
     const parsedChapNum = parseInt(chapterNumber)
 
     // Check if this chapter number already exists for this comic
@@ -108,6 +98,17 @@ export async function POST(
         )
       )
       .limit(1)
+
+    // For brand new chapters, images are required
+    if (!existingChapter && (!pageImages || !Array.isArray(pageImages) || pageImages.length === 0)) {
+      return NextResponse.json(
+        { error: 'Episode baru wajib mengunggah minimal 1 lembar gambar komik' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure music_url column exists in TiDB
+    await db.execute(sql`ALTER TABLE chapters ADD COLUMN IF NOT EXISTS music_url VARCHAR(500);`).catch(() => {})
 
     let chapterId: number
 
@@ -123,8 +124,29 @@ export async function POST(
         })
         .where(eq(chapters.id, chapterId))
 
-      // Clean old pages if any exist
-      await db.delete(pages).where(eq(pages.chapterId, chapterId))
+      // Only replace pages if new page images were explicitly uploaded
+      if (Array.isArray(pageImages) && pageImages.length > 0) {
+        await db.delete(pages).where(eq(pages.chapterId, chapterId))
+        for (let i = 0; i < pageImages.length; i++) {
+          const p = pageImages[i]
+          const imageUrl = typeof p === 'string' ? p : p.imageUrl || p.url
+          if (!imageUrl) continue
+
+          await db.insert(pages).values({
+            chapterId: Number(chapterId),
+            pageNumber: i + 1,
+            imageUrl,
+            width: typeof p === 'object' ? p.width || null : null,
+            height: typeof p === 'object' ? p.height || null : null,
+          })
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        chapterId,
+        message: `Episode ${parsedChapNum}: "${title}" berhasil diperbarui!`,
+      })
     } else {
       // 1. Insert New Chapter
       const result = await db.insert(chapters).values({
@@ -147,32 +169,32 @@ export async function POST(
           .limit(1)
         chapterId = latest?.id
       }
-    }
 
-    if (!chapterId) {
-      throw new Error('Gagal mendapatkan ID chapter database')
-    }
+      if (!chapterId) {
+        throw new Error('Gagal mendapatkan ID chapter database')
+      }
 
-    // 2. Insert Pages
-    for (let i = 0; i < pageImages.length; i++) {
-      const p = pageImages[i]
-      const imageUrl = typeof p === 'string' ? p : p.imageUrl || p.url
-      if (!imageUrl) continue
+      // 2. Insert Pages
+      for (let i = 0; i < pageImages.length; i++) {
+        const p = pageImages[i]
+        const imageUrl = typeof p === 'string' ? p : p.imageUrl || p.url
+        if (!imageUrl) continue
 
-      await db.insert(pages).values({
-        chapterId: Number(chapterId),
-        pageNumber: i + 1,
-        imageUrl,
-        width: typeof p === 'object' ? p.width || null : null,
-        height: typeof p === 'object' ? p.height || null : null,
+        await db.insert(pages).values({
+          chapterId: Number(chapterId),
+          pageNumber: i + 1,
+          imageUrl,
+          width: typeof p === 'object' ? p.width || null : null,
+          height: typeof p === 'object' ? p.height || null : null,
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        chapterId,
+        message: `Episode ${parsedChapNum}: "${title}" dengan ${pageImages.length} lembar berhasil disimpan!`,
       })
     }
-
-    return NextResponse.json({
-      success: true,
-      chapterId,
-      message: `Episode ${parsedChapNum}: "${title}" dengan ${pageImages.length} lembar berhasil disimpan!`,
-    })
   } catch (error: any) {
     console.error('Create chapter error:', error)
     return NextResponse.json(

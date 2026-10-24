@@ -16,6 +16,9 @@ import {
   Lock,
   Unlock,
   Music,
+  Pencil,
+  X,
+  Save,
 } from 'lucide-react'
 import { compressImage } from '@/lib/compress'
 
@@ -24,6 +27,9 @@ interface ComicDetail {
   title: string
   slug: string
   coverUrl: string | null
+  synopsis?: string | null
+  genre?: string | null
+  status?: string | null
 }
 
 interface ChapterItem {
@@ -47,8 +53,22 @@ export default function AdminEpisodePage() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // New chapter form state
+  // Comic edit state
+  const [showEditComic, setShowEditComic] = useState(false)
+  const [comicForm, setComicForm] = useState({
+    title: '',
+    slug: '',
+    genre: '',
+    status: 'ongoing',
+    synopsis: '',
+    coverUrl: '',
+  })
+  const [savingComic, setSavingComic] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+
+  // Chapter form state
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingChapterId, setEditingChapterId] = useState<number | null>(null)
   const [chapterNumber, setChapterNumber] = useState<number>(1)
   const [chapterTitle, setChapterTitle] = useState('')
   const [isFree, setIsFree] = useState(true)
@@ -121,6 +141,100 @@ export default function AdminEpisodePage() {
     }
   }, [comicId])
 
+  useEffect(() => {
+    if (comic) {
+      setComicForm({
+        title: comic.title || '',
+        slug: comic.slug || '',
+        genre: comic.genre || '',
+        status: comic.status || 'ongoing',
+        synopsis: comic.synopsis || '',
+        coverUrl: comic.coverUrl || '',
+      })
+    }
+  }, [comic])
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingCover(true)
+    try {
+      const { file: compressedFile } = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 1200,
+        quality: 0.85,
+      })
+
+      const formData = new FormData()
+      formData.append('file', compressedFile)
+      formData.append('folder', 'covers')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal mengunggah sampul')
+
+      setComicForm((prev) => ({ ...prev, coverUrl: data.url }))
+      setMessage({ type: 'success', text: 'Sampul baru berhasil diunggah!' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Gagal mengunggah sampul' })
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+
+  const handleSaveComic = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingComic(true)
+    try {
+      const res = await fetch(`/api/comics/${comicId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(comicForm),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal memperbarui komik')
+
+      setComic(data.comic)
+      setShowEditComic(false)
+      setMessage({ type: 'success', text: 'Detail & sampul komik berhasil diperbarui!' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Gagal menyimpan komik' })
+    } finally {
+      setSavingComic(false)
+    }
+  }
+
+  const handleStartEditChapter = (chap: ChapterItem) => {
+    setEditingChapterId(chap.id)
+    setChapterNumber(chap.chapterNumber)
+    setChapterTitle(chap.title)
+    setIsFree(chap.isFree)
+    setPrice(String(chap.price || '0'))
+    setMusicUrl(chap.musicUrl || '')
+    setSelectedFiles([])
+    setPreviews([])
+    setShowAddForm(true)
+    setShowEditComic(false)
+
+    window.scrollTo({ top: 250, behavior: 'smooth' })
+  }
+
+  const handleCancelEditChapter = () => {
+    setEditingChapterId(null)
+    setChapterNumber((chapters.length || 0) + 1)
+    setChapterTitle('')
+    setIsFree(true)
+    setPrice('0')
+    setMusicUrl('')
+    setSelectedFiles([])
+    setPreviews([])
+    setShowAddForm(false)
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
@@ -140,7 +254,7 @@ export default function AdminEpisodePage() {
   const handleSubmitChapter = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (selectedFiles.length === 0) {
+    if (!editingChapterId && selectedFiles.length === 0) {
       alert('Pilih minimal 1 gambar lembar komik untuk episode ini!')
       return
     }
@@ -207,6 +321,7 @@ export default function AdminEpisodePage() {
 
       setMessage({ type: 'success', text: saveData.message })
       // Reset form
+      setEditingChapterId(null)
       setShowAddForm(false)
       setSelectedFiles([])
       setPreviews([])
@@ -283,18 +398,202 @@ export default function AdminEpisodePage() {
                 {comic.title}
               </h1>
               <p className="text-xs text-gray-400 font-mono mt-1">
-                Total {chapters.length} Episode Terbit
+                Total {chapters.length} Episode Terbit &bull; Status: <span className="text-gold capitalize">{comic.status || 'ongoing'}</span>
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light shrink-0 shadow-md shadow-gold/10"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{showAddForm ? 'Tutup Form Upload' : 'Upload Episode Baru'}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditComic(!showEditComic)
+                if (!showEditComic) setShowAddForm(false)
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gold/40 bg-dark px-3.5 py-2 text-xs font-semibold text-gold hover:bg-gold/10 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>{showEditComic ? 'Tutup Edit Komik' : 'Edit Info & Cover Komik'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (editingChapterId) {
+                  handleCancelEditChapter()
+                }
+                setShowAddForm(!showAddForm)
+                if (!showAddForm) setShowEditComic(false)
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-xs sm:text-sm font-semibold text-black transition-colors hover:bg-gold-light shrink-0 shadow-md shadow-gold/10"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{showAddForm ? 'Tutup Form' : 'Upload Episode Baru'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Comic Drawer */}
+      {showEditComic && (
+        <div className="rounded-xl border border-gold/40 bg-dark-card p-6 shadow-xl space-y-5 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between border-b border-dark-border pb-4">
+            <div className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-gold" />
+              <h2 className="font-heading font-bold text-lg text-white">Edit Detail & Sampul Komik</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEditComic(false)}
+              className="text-gray-400 hover:text-white p-1 rounded-lg"
+              title="Tutup"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveComic} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Cover Column */}
+              <div className="space-y-3">
+                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                  Sampul / Cover Komik
+                </label>
+                <div className="aspect-[3/4] w-full max-w-[180px] mx-auto rounded-lg overflow-hidden border border-dark-border bg-dark relative group">
+                  {comicForm.coverUrl ? (
+                    <img
+                      src={comicForm.coverUrl}
+                      alt="Cover Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                      Tanpa Cover
+                    </div>
+                  )}
+                  {uploadingCover && (
+                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-gold text-xs font-bold gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Mengunggah...</span>
+                    </div>
+                  )}
+                </div>
+
+                <label className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gold/15 hover:bg-gold/25 border border-gold/40 text-xs font-semibold text-gold cursor-pointer transition-colors w-full">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingCover ? 'Mengunggah...' : 'Ganti Sampul (JPG/PNG)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingCover}
+                    onChange={handleCoverUpload}
+                  />
+                </label>
+              </div>
+
+              {/* Info Column */}
+              <div className="md:col-span-2 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                      Judul Komik *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={comicForm.title}
+                      onChange={(e) => setComicForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full bg-dark border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                      Slug URL *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={comicForm.slug}
+                      onChange={(e) => setComicForm(prev => ({ ...prev, slug: e.target.value }))}
+                      className="w-full bg-dark border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm font-mono text-gray-300 focus:border-gold focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                      Genre
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Aksi, Misteri, Petualangan"
+                      value={comicForm.genre}
+                      onChange={(e) => setComicForm(prev => ({ ...prev, genre: e.target.value }))}
+                      className="w-full bg-dark border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                      Status Terbit
+                    </label>
+                    <select
+                      value={comicForm.status}
+                      onChange={(e) => setComicForm(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full bg-dark border border-dark-border rounded-lg px-3.5 py-2.5 text-white text-sm focus:border-gold focus:outline-none"
+                    >
+                      <option value="ongoing">Berjalan (Ongoing)</option>
+                      <option value="completed">Tamat (Completed)</option>
+                      <option value="hiatus">Hiatus</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
+                    Sinopsis Komik
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Tuliskan deskripsi cerita komik..."
+                    value={comicForm.synopsis}
+                    onChange={(e) => setComicForm(prev => ({ ...prev, synopsis: e.target.value }))}
+                    className="w-full bg-dark border border-dark-border rounded-lg p-3 text-white text-sm focus:border-gold focus:outline-none resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditComic(false)}
+                    className="px-4 py-2 rounded-lg border border-dark-border text-xs text-gray-300 hover:text-white transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingComic}
+                    className="inline-flex items-center gap-2 rounded-lg bg-gold px-5 py-2 text-xs font-bold text-black hover:bg-gold-light transition-colors disabled:opacity-50"
+                  >
+                    {savingComic ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Simpan Perubahan Komik</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 
@@ -321,17 +620,39 @@ export default function AdminEpisodePage() {
         </div>
       )}
 
-      {/* Upload New Episode Form Drawer */}
+      {/* Upload/Edit Episode Form Drawer */}
       {showAddForm && (
         <div className="rounded-xl border border-gold/40 bg-dark-card p-6 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
-          <div className="border-b border-dark-border pb-4">
-            <h2 className="font-heading text-lg font-bold text-white flex items-center gap-2">
-              <Upload className="w-5 h-5 text-gold" />
-              Upload Lembaran Episode Baru
-            </h2>
-            <p className="text-xs text-gray-400 mt-1">
-              File gambar otomatis dikompresi dan di-hosting ke Cloudflare R2 CDN agar cepat dibaca di HP
-            </p>
+          <div className="border-b border-dark-border pb-4 flex items-center justify-between">
+            <div>
+              <h2 className="font-heading text-lg font-bold text-white flex items-center gap-2">
+                {editingChapterId ? (
+                  <>
+                    <Pencil className="w-5 h-5 text-gold" />
+                    <span>Edit Episode {chapterNumber}: {chapterTitle || `Episode ${chapterNumber}`}</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-gold" />
+                    <span>Upload Lembaran Episode Baru</span>
+                  </>
+                )}
+              </h2>
+              <p className="text-xs text-gray-400 mt-1">
+                {editingChapterId
+                  ? 'Perbarui judul, musik latar, akses member, atau ganti lembaran gambar.'
+                  : 'File gambar otomatis dikompresi dan di-hosting ke Cloudflare R2 CDN agar cepat dibaca di HP'}
+              </p>
+            </div>
+            {editingChapterId && (
+              <button
+                type="button"
+                onClick={handleCancelEditChapter}
+                className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg border border-dark-border"
+              >
+                Batal Edit
+              </button>
+            )}
           </div>
 
           <form onSubmit={handleSubmitChapter} className="space-y-5">
@@ -477,116 +798,118 @@ export default function AdminEpisodePage() {
             {/* Multi-page Image Uploader */}
             <div>
               <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-2">
-                Pilih File Gambar Lembaran Episode (Bisa pilih banyak sekaligus)
+                {editingChapterId
+                  ? 'Ganti File Gambar Lembaran (Opsional: biarkan kosong jika hanya mengganti judul atau musik)'
+                  : 'Pilih File Gambar Lembaran Episode (Bisa pilih banyak sekaligus)'}
               </label>
-
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-dark-border hover:border-gold/60 rounded-xl p-8 bg-dark cursor-pointer transition-colors group">
-                <FileImage className="w-10 h-10 text-gray-500 group-hover:text-gold transition-colors mb-2" />
-                <span className="text-sm font-semibold text-white">
-                  Klik untuk Memilih Lembaran Komik
-                </span>
-                <span className="text-xs text-gray-400 mt-1">
-                  Format: JPG, PNG, WebP. Urutan nomor lembar akan mengikuti urutan file.
-                </span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  disabled={submitting}
-                />
-              </label>
-            </div>
-
-            {/* Thumbnail Preview of Selected Pages */}
-            {previews.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-300">
-                    {previews.length} Lembar Dipilih (Urutan Halaman 1 s/d {previews.length}):
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedFiles([])
-                      setPreviews([])
-                    }}
-                    className="text-xs text-red-400 hover:underline"
-                  >
-                    Hapus Semua Lembar
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-72 overflow-y-auto p-3 bg-dark rounded-xl border border-dark-border">
-                  {previews.map((src, i) => (
-                    <div key={i} className="relative group rounded-lg overflow-hidden border border-dark-border bg-dark-card aspect-[2/3]">
-                      <img src={src} alt={`Hal ${i + 1}`} className="w-full h-full object-cover" />
-                      <div className="absolute top-1 left-1 bg-black/80 text-[10px] font-bold text-white px-1.5 py-0.5 rounded">
-                        #{i + 1}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeSelectedFile(i)}
-                        className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Hapus lembar ini"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Progress indicator during upload */}
-            {uploadProgress && (
-              <div className="p-4 rounded-xl bg-gold/10 border border-gold/30 text-gold space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Mengompres & Mengunggah Lembaran ke Cloudflare R2...
-                  </span>
-                  <span>
-                    Lembar {uploadProgress.current} dari {uploadProgress.total}
-                  </span>
-                </div>
-                <div className="w-full bg-dark h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-gold h-full transition-all duration-300"
-                    style={{
-                      width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Form Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                disabled={submitting}
-                className="px-4 py-2.5 rounded-lg border border-dark-border text-sm font-medium text-gray-300 hover:bg-dark hover:text-white transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || selectedFiles.length === 0}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gold hover:bg-gold-light text-black font-semibold text-sm transition-colors disabled:opacity-50 shadow-md shadow-gold/10"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Sedang Menyimpan...</span>
-                  </>
-                ) : (
-                  <span>Simpan Episode & Lembaran</span>
-                )}
-              </button>
-            </div>
+ 
+               <label className="flex flex-col items-center justify-center border-2 border-dashed border-dark-border hover:border-gold/60 rounded-xl p-8 bg-dark cursor-pointer transition-colors group">
+                 <FileImage className="w-10 h-10 text-gray-500 group-hover:text-gold transition-colors mb-2" />
+                 <span className="text-sm font-semibold text-white">
+                   Klik untuk Memilih Lembaran Komik
+                 </span>
+                 <span className="text-xs text-gray-400 mt-1">
+                   Format: JPG, PNG, WebP. Urutan nomor lembar akan mengikuti urutan file.
+                 </span>
+                 <input
+                   type="file"
+                   multiple
+                   accept="image/*"
+                   onChange={handleFileSelect}
+                   className="hidden"
+                   disabled={submitting}
+                 />
+               </label>
+             </div>
+ 
+             {/* Thumbnail Preview of Selected Pages */}
+             {previews.length > 0 && (
+               <div className="space-y-2">
+                 <div className="flex items-center justify-between">
+                   <span className="text-xs font-semibold text-gray-300">
+                     {previews.length} Lembar Dipilih (Urutan Halaman 1 s/d {previews.length}):
+                   </span>
+                   <button
+                     type="button"
+                     onClick={() => {
+                       setSelectedFiles([])
+                       setPreviews([])
+                     }}
+                     className="text-xs text-red-400 hover:underline"
+                   >
+                     Hapus Semua Lembar
+                   </button>
+                 </div>
+ 
+                 <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-72 overflow-y-auto p-3 bg-dark rounded-xl border border-dark-border">
+                   {previews.map((src, i) => (
+                     <div key={i} className="relative group rounded-lg overflow-hidden border border-dark-border bg-dark-card aspect-[2/3]">
+                       <img src={src} alt={`Hal ${i + 1}`} className="w-full h-full object-cover" />
+                       <div className="absolute top-1 left-1 bg-black/80 text-[10px] font-bold text-white px-1.5 py-0.5 rounded">
+                         #{i + 1}
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => removeSelectedFile(i)}
+                         className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                         title="Hapus lembar ini"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
+ 
+             {/* Progress indicator during upload */}
+             {uploadProgress && (
+               <div className="p-4 rounded-xl bg-gold/10 border border-gold/30 text-gold space-y-2">
+                 <div className="flex items-center justify-between text-xs font-bold">
+                   <span className="flex items-center gap-2">
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                     Mengompres & Mengunggah Lembaran ke Cloudflare R2...
+                   </span>
+                   <span>
+                     Lembar {uploadProgress.current} dari {uploadProgress.total}
+                   </span>
+                 </div>
+                 <div className="w-full bg-dark h-2 rounded-full overflow-hidden">
+                   <div
+                     className="bg-gold h-full transition-all duration-300"
+                     style={{
+                       width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                     }}
+                   />
+                 </div>
+               </div>
+             )}
+ 
+             {/* Form Actions */}
+             <div className="flex items-center justify-end gap-3 pt-3">
+               <button
+                 type="button"
+                 onClick={handleCancelEditChapter}
+                 disabled={submitting}
+                 className="px-4 py-2.5 rounded-lg border border-dark-border text-sm font-medium text-gray-300 hover:bg-dark hover:text-white transition-colors"
+               >
+                 Batal
+               </button>
+               <button
+                 type="submit"
+                 disabled={submitting || (!editingChapterId && selectedFiles.length === 0)}
+                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gold hover:bg-gold-light text-black font-semibold text-sm transition-colors disabled:opacity-50 shadow-md shadow-gold/10"
+               >
+                 {submitting ? (
+                   <>
+                     <Loader2 className="w-4 h-4 animate-spin" />
+                     <span>Sedang Menyimpan...</span>
+                   </>
+                 ) : (
+                   <span>{editingChapterId ? 'Simpan Perubahan Episode' : 'Simpan Episode & Lembaran'}</span>
+                 )}
+               </button>
+             </div>
           </form>
         </div>
       )}
@@ -653,6 +976,15 @@ export default function AdminEpisodePage() {
                   </td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditChapter(chap)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-dark-border bg-dark px-2.5 py-1.5 text-xs font-medium text-gold hover:border-gold hover:bg-gold/10 transition-colors"
+                        title="Edit Judul & Musik Episode"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
                       {comic && (
                         <Link
                           href={`/komik/${comic.slug}/${chap.chapterNumber}`}
