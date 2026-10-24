@@ -28,7 +28,7 @@ export async function createXenditInvoice(
       ? Buffer.from(`${secretKey}:`).toString('base64')
       : btoa(`${secretKey}:`)
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sang-penjaga.pages.dev'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sangpenjaga.com'
 
   const payload = {
     external_id: params.orderId,

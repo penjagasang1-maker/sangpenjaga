@@ -4,7 +4,7 @@ compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [vars]
-NEXT_PUBLIC_APP_URL = "https://sang-penjaga.pages.dev"
+NEXT_PUBLIC_APP_URL = "https://sangpenjaga.com"
 DATABASE_URL = 'mysql://xZKZV6u5smaPqcs.root:Wyx9aJYjxnUWPTbR@gateway01.us-east-1.prod.aws.tidbcloud.com:4000/sangpenjaga?ssl={"rejectUnauthorized":true}'
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "a2c3zekd"
 CLOUDINARY_API_KEY = "128493893954743"

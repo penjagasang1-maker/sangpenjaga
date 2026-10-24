@@ -38,7 +38,7 @@ export default function TermsAndConditionsPage() {
                 1. Ketentuan Umum &amp; Penerimaan Layanan
               </h2>
               <p>
-                Selamat datang di platform digital resmi <strong>Sang Penjaga</strong> (<span className="text-gold font-mono text-xs">https://sang-penjaga.pages.dev</span>). Dengan mengakses, mendaftar akun, membeli koin digital, atau berlangganan layanan VIP kami, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh Syarat dan Ketentuan ini. Jika Anda tidak menyetujui salah satu klausul, mohon untuk tidak melanjutkan penggunaan platform.
+                Selamat datang di platform digital resmi <strong>Sang Penjaga</strong> (<span className="text-gold font-mono text-xs">https://sangpenjaga.com</span>). Dengan mengakses, mendaftar akun, membeli koin digital, atau berlangganan layanan VIP kami, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh Syarat dan Ketentuan ini. Jika Anda tidak menyetujui salah satu klausul, mohon untuk tidak melanjutkan penggunaan platform.
               </p>
             </section>
 

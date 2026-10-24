@@ -35,7 +35,7 @@ export default function RefundPolicyPage() {
             <section>
               <h2 className="text-base font-semibold text-white mb-2">1. Ketentuan Umum Produk Digital</h2>
               <p>
-                Layanan pada platform Sang Penjaga (<span className="text-gold font-mono text-xs">https://sang-penjaga.pages.dev</span>) mencakup konten digital berupa <strong>Koin Premium</strong> dan <strong>Paket Langganan VIP Member</strong>. Sesuai sifat alami produk digital yang langsung dapat diakses seketika setelah pembayaran terkonfirmasi, pada prinsipnya seluruh transaksi bersifat final dan tidak dapat dibatalkan secara sepihak.
+                Layanan pada platform Sang Penjaga (<span className="text-gold font-mono text-xs">https://sangpenjaga.com</span>) mencakup konten digital berupa <strong>Koin Premium</strong> dan <strong>Paket Langganan VIP Member</strong>. Sesuai sifat alami produk digital yang langsung dapat diakses seketika setelah pembayaran terkonfirmasi, pada prinsipnya seluruh transaksi bersifat final dan tidak dapat dibatalkan secara sepihak.
               </p>
             </section>
 

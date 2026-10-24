@@ -18,7 +18,7 @@ export default function PengaturanPembayaranPage() {
     { id: 2, name: 'Langganan Tahunan', price: 10000, durationDays: 365, isActive: true },
   ])
 
-  const webhookUrl = 'https://sang-penjaga.pages.dev/api/payment/webhook'
+  const webhookUrl = 'https://sangpenjaga.com/api/payment/webhook'
 
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl)
