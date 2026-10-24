@@ -34,10 +34,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
 
   // Password Change Form State
-  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -74,11 +72,6 @@ export default function ProfilePage() {
     setErrorMsg(null)
     setSuccessMsg(null)
 
-    if (!currentPassword) {
-      setErrorMsg('Masukkan kata sandi saat ini.')
-      return
-    }
-
     if (newPassword.length < 6) {
       setErrorMsg('Kata sandi baru harus minimal 6 karakter.')
       return
@@ -94,14 +87,13 @@ export default function ProfilePage() {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ newPassword }),
       })
 
       const data = await res.json()
 
       if (res.ok && data.success) {
         setSuccessMsg(data.message || 'Kata sandi berhasil diperbarui!')
-        setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
       } else {
@@ -224,36 +216,6 @@ export default function ProfilePage() {
 
             {/* Password Form */}
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              {/* Current Password */}
-              <div>
-                <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
-                  Kata Sandi Saat Ini
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrent ? 'text' : 'password'}
-                    required
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Masukkan sandi saat ini"
-                    className="w-full bg-dark border border-dark-border rounded-lg pl-4 pr-11 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrent(!showCurrent)}
-                    tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gold transition-colors p-1"
-                    aria-label={showCurrent ? 'Sembunyikan' : 'Lihat'}
-                  >
-                    {showCurrent ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
               {/* New Password */}
               <div>
                 <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider mb-1.5">
@@ -315,17 +277,11 @@ export default function ProfilePage() {
               </div>
 
               {/* Submit Button */}
-              <div className="pt-2 flex items-center justify-between">
-                <Link
-                  href="/lupa-password"
-                  className="text-xs text-gold hover:underline"
-                >
-                  Lupa sandi saat ini?
-                </Link>
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={savingPassword}
-                  className="bg-gold hover:bg-gold-light text-black font-heading font-semibold py-2.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-gold/10"
+                  className="w-full bg-gold hover:bg-gold-light text-black font-heading font-semibold py-2.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-gold/10"
                 >
                   {savingPassword ? (
                     <>

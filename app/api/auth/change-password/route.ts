@@ -67,40 +67,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Silakan masuk terlebih dahulu' }, { status: 401 })
     }
 
-    const { currentPassword, newPassword } = await request.json()
+    const { newPassword } = await request.json()
 
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json(
-        { error: 'Kata sandi saat ini dan kata sandi baru wajib diisi' },
-        { status: 400 }
-      )
-    }
-
-    if (newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 6) {
       return NextResponse.json(
         { error: 'Kata sandi baru minimal 6 karakter' },
-        { status: 400 }
-      )
-    }
-
-    // Get current user password hash from DB
-    const [dbUser] = await db
-      .select({
-        id: users.id,
-        hashedPassword: users.hashedPassword,
-      })
-      .from(users)
-      .where(eq(users.id, user.id))
-      .limit(1)
-
-    if (!dbUser) {
-      return NextResponse.json({ error: 'Pengguna tidak ditemukan' }, { status: 404 })
-    }
-
-    const isMatch = await verifyPassword(currentPassword, dbUser.hashedPassword)
-    if (!isMatch) {
-      return NextResponse.json(
-        { error: 'Kata sandi saat ini tidak cocok / salah' },
         { status: 400 }
       )
     }
