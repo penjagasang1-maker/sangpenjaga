@@ -13,7 +13,7 @@ IPAYMU_VA = ""
 IPAYMU_API_KEY = ""
 IPAYMU_IS_PRODUCTION = "true"
 R2_BUCKET_NAME = "sang-penjaga"
-R2_PUBLIC_DOMAIN = ""
+R2_PUBLIC_DOMAIN = "https://cdn.sangpenjaga.com"
 
 [[r2_buckets]]
 binding = "R2_BUCKET"
