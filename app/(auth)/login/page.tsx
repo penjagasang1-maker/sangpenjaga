@@ -36,7 +36,7 @@ export default function LoginPage() {
         timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
       } else {
         // Auto-redirect to admin when countdown hits 0
-        router.push(redirectParam || '/admin')
+        window.location.href = redirectParam || '/admin'
       }
     }
     return () => clearTimeout(timer)
@@ -65,17 +65,12 @@ export default function LoginPage() {
       // Check if user is admin or superadmin
       if (data.role === 'admin' || data.role === 'superadmin') {
         if (redirectParam) {
-          // If already trying to visit a specific URL, go straight there
-          router.push(redirectParam)
-          router.refresh()
+          window.location.href = redirectParam
         } else {
-          // Show choice screen with auto-redirect to /admin
           setAdminChoice({ role: data.role })
         }
       } else {
-        // Regular user goes to home or redirect
-        router.push(redirectParam || '/')
-        router.refresh()
+        window.location.href = redirectParam || '/'
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

@@ -6,7 +6,7 @@ import { db } from '@/lib/db'
 import { banners, comics } from '@/lib/schema'
 import { desc, eq, asc } from 'drizzle-orm'
 
-export const revalidate = 0
+export const revalidate = 30
 
 export default async function HomePage() {
   let heroSlides: { id: number; imageUrl: string; linkUrl?: string }[] = []
@@ -14,33 +14,35 @@ export default async function HomePage() {
   let popularComics: any[] = []
 
   try {
-    const bannerRows = await db
-      .select({
-        id: banners.id,
-        imageUrl: banners.imageUrl,
-        linkUrl: banners.linkUrl,
-      })
-      .from(banners)
-      .where(eq(banners.isActive, true))
-      .orderBy(asc(banners.sortOrder))
+    const [bannerRows, latestRows, popularRows] = await Promise.all([
+      db
+        .select({
+          id: banners.id,
+          imageUrl: banners.imageUrl,
+          linkUrl: banners.linkUrl,
+        })
+        .from(banners)
+        .where(eq(banners.isActive, true))
+        .orderBy(asc(banners.sortOrder)),
+      db
+        .select()
+        .from(comics)
+        .orderBy(desc(comics.createdAt))
+        .limit(8),
+      db
+        .select()
+        .from(comics)
+        .orderBy(desc(comics.viewCount))
+        .limit(8),
+    ])
 
     heroSlides = bannerRows.map((b) => ({
       id: b.id,
       imageUrl: b.imageUrl,
       linkUrl: b.linkUrl || undefined,
     }))
-
-    latestComics = await db
-      .select()
-      .from(comics)
-      .orderBy(desc(comics.createdAt))
-      .limit(8)
-
-    popularComics = await db
-      .select()
-      .from(comics)
-      .orderBy(desc(comics.viewCount))
-      .limit(8)
+    latestComics = latestRows
+    popularComics = popularRows
   } catch (e) {
     console.error('Error fetching homepage data:', e)
   }
