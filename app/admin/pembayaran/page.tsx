@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { CreditCard, Search, Filter, Download } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
 
@@ -27,12 +28,12 @@ export default function AdminPembayaranPage() {
             Riwayat transaksi dan pembayaran pembaca
           </p>
         </div>
-        <a
+        <Link
           href="/admin/pembayaran/pengaturan"
           className="inline-flex items-center gap-2 rounded-lg border border-dark-border px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-dark-hover hover:text-white"
         >
-          Pengaturan Midtrans
-        </a>
+          Pengaturan Api
+        </Link>
       </div>
 
       {/* Stats */}

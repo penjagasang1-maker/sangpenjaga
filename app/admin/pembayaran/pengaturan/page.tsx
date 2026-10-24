@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, Key, AlertTriangle, Loader2, Check, Copy, ExternalLink, ShieldCheck, CreditCard } from 'lucide-react'
+import Link from 'next/link'
+import { Save, Key, AlertTriangle, Loader2, Check, Copy, ExternalLink, ShieldCheck, CreditCard, ArrowLeft } from 'lucide-react'
 
 export default function PengaturanPembayaranPage() {
   const [saving, setSaving] = useState(false)
@@ -222,15 +223,24 @@ export default function PengaturanPembayaranPage() {
         </div>
       </div>
 
-      {/* Save */}
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-2.5 text-sm font-bold text-dark transition-colors hover:bg-gold-light disabled:opacity-50"
-      >
-        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Simpan Pengaturan
-      </button>
+      {/* Save & Back */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-2.5 text-sm font-bold text-dark transition-colors hover:bg-gold-light disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Simpan Pengaturan
+        </button>
+        <Link
+          href="/admin/pembayaran"
+          className="inline-flex items-center gap-2 rounded-lg border border-dark-border bg-dark-card px-5 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-dark-hover hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali
+        </Link>
+      </div>
     </div>
   )
 }
