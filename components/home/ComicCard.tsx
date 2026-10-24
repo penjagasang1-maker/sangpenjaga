@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 
 export interface Comic {
@@ -57,7 +59,7 @@ export default function ComicCard({
             decoding="async"
             onError={(e) => {
               const target = e.currentTarget
-              if (!target.dataset.fallback && coverUrl.includes('cdn.sangpenjaga.com/')) {
+              if (!target.dataset.fallback && coverUrl && coverUrl.includes('cdn.sangpenjaga.com/')) {
                 target.dataset.fallback = 'true'
                 target.src = coverUrl.replace('https://cdn.sangpenjaga.com/', '/api/cdn/')
               }
